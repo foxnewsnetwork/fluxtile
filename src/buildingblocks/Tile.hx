@@ -37,14 +37,14 @@ class Tile extends Element, implements Statistics {
 	**/
 	// Returns the image url or changes it
 	public function Image( ?url : String ) : String { 
-		if( image == null ){ 
+		if( url == null ){ 
 			return this.image;
 		} // end if
-		else if( this.image == image ){ 
+		else if( this.image == url ){ 
 			return this.image;
 		} // end else
-		this.image = image; 
-		this.CSS("background-image", "url('" + image + "')" );
+		this.image = url; 
+		this.CSS("background-image", "url('" + url + "')" );
 		return this.image;
 	} // Image
 	
@@ -53,12 +53,12 @@ class Tile extends Element, implements Statistics {
 		if ( m != null ) { 
 			this.mode = m;
 			switch(this.mode) { 
-				case "1" :
+				case 1 :
 					this.p_EditMode();
-					break;
 				default :
 					this.p_NormalMode();
 			} // switch
+			return m;
 		} // if
 		else {
 			return this.mode;
@@ -147,25 +147,36 @@ class Tile extends Element, implements Statistics {
 		this.domContainer.mousedown(function(e:JqEvent){
 			mousedownflag = true; 
 			var body = this.domBody;
-			var mx = 100 * e.pageX / body.width();
-			var my = 100 * e.pageY / body.height();
-			xdiff = mx - this.position.x;
-			ydiff = my - this.position.y;
+			if ( this.type_position == "%" ) { 
+				var mx = 100 * e.pageX / body.width();
+				var my = 100 * e.pageY / body.height();
+				xdiff = mx - this.position.x;
+				ydiff = my - this.position.y;
+			} // if
+			else if ( this.type_position == "px" ) { 
+				xdiff = e.pageX - this.position.x;
+				ydiff = e.pageY - this.position.y;
+			}
 		} ); // end mousedown
 		
 		this.domContainer.mousemove(function(e:JqEvent){ 
 			if (mousedownflag) {
 				var dx = xdiff, dy = ydiff;
-				var document = this.domBody; 
-				var mouseX = 100 * e.pageX / document.width();
-				var mouseY = 100 * e.pageY / document.height();
-				
+				var document = this.domBody;
+				var mouseX, mouseY; 
+				if ( this.type_position == "%" ) { 
+					mouseX = 100 * e.pageX / document.width();
+					mouseY = 100 * e.pageY / document.height();
+				} // if
+				else { 
+					mouseX = e.pageX;
+					mouseY = e.pageY;
+				} // else
 				this.Position({ x : mouseX - dx, y : mouseY - dy }); // end position
 			} // end if
 			return;
 		} ); //end mousemove
-		this.domContainer.mouseup(function(e:JqEvent){
-			positioncb( this.Position() ); 
+		this.domContainer.mouseup(function(e:JqEvent){ 
 			mousedownflag = false;
 		} ); // end mouseup
 		

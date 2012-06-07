@@ -2,7 +2,8 @@
 
 # Uncomment the desirable target
 # JavaScript target
-# -js out/fluxtile.js
+ -js out/fluxtile.js
+ -main tests.TileTest
 
 # SWF 9 target
 # -swf9 out/fluxtile.swf

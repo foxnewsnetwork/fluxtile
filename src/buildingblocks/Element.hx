@@ -7,7 +7,9 @@ class Element {
 	private var domContainer : JQuery;
 	private var domBody : JQuery;
 	private var position : { x : Float, y : Float };
+	private var type_position : String;
 	private var size : { width : Float, height : Float };
+	private var type_size : String;
 	private var hides : Array<Void -> Void>;
 	private var shows : Array<Void -> Void>;
 	private var parent : JQuery; // defaults to body
@@ -28,54 +30,47 @@ class Element {
 		Element.ID += 1;
 		this.CSS("z-index", "967");
 		this.CSS("position", "absolute");
+		this.type_position = "px";
+		this.type_size = "px";
 	} // end new
 	
+	// Set the position type
+	public function TypePosition( ?type : String ) : String { 
+		if ( type != null ) { 
+			this.type_position = type;
+		} // if
+		return this.type_position;
+	} // TypePosition
+	
 	// Position is always with respect to the parent
-	public function Position( ?pos : { x : Float, y : Float }, ?type : String ) : { x : Float, y : Float }{ 
+	public function Position( ?pos : { x : Float, y : Float } ) : { x : Float, y : Float }{ 
 		Element.TestCounter++;
 		if( pos == null ){ 
 			return this.position;
 		} //end if
 		this.position = pos;
-		//js.Lib.alert(this.parent.html());
-		var offset = { top : this.parent.innerHeight(), left : this.parent.innerWidth() }; 
-		//js.Lib.alert(offset);
 		var x = this.position.x;
 		var y = this.position.y;
-		switch(type) { 
-			case "px" :
-				this.domContainer.css("left", x + "px");
-				this.domContainer.css("top", y + "px");
-				break;
-			case "em" :
-				this.domContainer.css("left", x + "em");
-				this.domContainer.css("top", y + "em");
-				break;
-			default:
-				this.domContainer.css("left", x + "%");
-				this.domContainer.css("top", y + "%");
-		} // switch
+		this.domContainer.css("left", x + this.type_position );
+		this.domContainer.css("top", y + this.type_position );
 		return this.position;
 	} // end Position
 	
-	public function Size( ?siz : { width : Float, height : Float }, ?type : String) : { width : Float, height : Float }{ 
+	// Set the size type
+	public function TypeSize( ?type : String ) : String { 
+		if ( type != null ) { 
+			this.type_size = type;
+		} // if
+		return this.type_size;
+	} // TypeSize
+	
+	public function Size( ?siz : { width : Float, height : Float } ) : { width : Float, height : Float }{ 
 		if( siz == null ){ 
 			return this.size;
 		} // end if
 		this.size = siz;
-		switch(type) { 
-			case "px" :
-				this.domContainer.css("width", this.size.width + "px");
-				this.domContainer.css("height", this.size.height + "px");
-				break;
-			case "em" :
-				this.domContainer.css("width", this.size.width + "em");
-				this.domContainer.css("height", this.size.height + "em");
-				break;
-			default :
-				this.domContainer.css("width", this.size.width + "%");
-				this.domContainer.css("height", this.size.height + "%");
-		} // switch
+		this.domContainer.css("width", this.size.width + this.type_size );
+		this.domContainer.css("height", this.size.height + this.type_size );
 		this.domContainer.css("background-size", "100% 100%");
 		return this.size;
 	} // end Size
