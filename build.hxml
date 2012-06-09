@@ -2,8 +2,11 @@
 
 # Uncomment the desirable target
 # JavaScript target
- -js out/fluxtile-textcontrol.js
- -main tests.TextControlTest
+ -js out/fluxtile-iconscontrol.js
+ -main tests.IconsControlTest
+ 
+ # -js out/fluxtile-textcontrol.js
+ # -main tests.TextControlTest
  
  #-js out/fluxtile-highlight.js
  #-main tests.BoxHighlighterTest
