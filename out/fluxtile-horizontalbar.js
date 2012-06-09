@@ -533,12 +533,15 @@ toolbar.HorizontalBar = function(p) {
 	buildingblocks.Tile.call(this);
 	this.icons = [];
 	this.active = 0;
+	this.highlight = new animation.BoxHighlighter();
+	this.highlight.Hide();
 }
 toolbar.HorizontalBar.__name__ = ["toolbar","HorizontalBar"];
 toolbar.HorizontalBar.__super__ = buildingblocks.Tile;
 for(var k in buildingblocks.Tile.prototype ) toolbar.HorizontalBar.prototype[k] = buildingblocks.Tile.prototype[k];
 toolbar.HorizontalBar.prototype.icons = null;
 toolbar.HorizontalBar.prototype.active = null;
+toolbar.HorizontalBar.prototype.highlight = null;
 toolbar.HorizontalBar.prototype.Icon = function(img,cb) {
 	var me = this;
 	if(img == null) {
@@ -558,35 +561,123 @@ toolbar.HorizontalBar.prototype.Icon = function(img,cb) {
 			icon.CSS("border","4px solid red");
 			if(cb != null) cb();
 		});
+		icon.Mouseover(function(e) {
+			me.highlight.Position(icon.Position());
+			me.highlight.Size(icon.Size());
+			me.highlight.Show();
+		});
+		icon.Mouseleave(function(e) {
+			me.highlight.Hide();
+		});
+		this.icons.push(icon);
 	}
 }
 toolbar.HorizontalBar.prototype.Size = function(siz) {
 	if(siz == null) return buildingblocks.Tile.prototype.Size.call(this); else {
-		var size = buildingblocks.Tile.prototype.Size.call(this,siz);
-		var iwidth = size.width / this.icons.length;
-		var iheight = size.height;
+		buildingblocks.Tile.prototype.Size.call(this,siz);
+		var iwidth = siz.width;
+		if(this.icons.length != 0) iwidth /= this.icons.length;
+		var iheight = siz.height;
+		this.highlight.Size({ width : iwidth, height : iheight});
 		var _g1 = 0, _g = this.icons.length;
 		while(_g1 < _g) {
 			var k = _g1++;
 			this.icons[k].Size({ width : iwidth, height : iheight});
 			this.icons[k].Position({ x : k * iwidth + this.Position().x, y : this.Position().y});
 		}
-		return size;
+		return siz;
 	}
 }
 toolbar.HorizontalBar.prototype.Position = function(pos) {
 	if(pos == null) return buildingblocks.Tile.prototype.Position.call(this); else {
-		var position = buildingblocks.Tile.prototype.Position.call(this,pos);
-		var iwidth = this.Size().width / this.icons.length;
+		buildingblocks.Tile.prototype.Position.call(this,pos);
+		var iwidth = this.Size().width;
+		if(this.icons.length != 0) iwidth /= this.icons.length;
 		var _g1 = 0, _g = this.icons.length;
 		while(_g1 < _g) {
 			var k = _g1++;
-			this.icons[k].Position({ x : k * iwidth + position.x, y : position.y});
+			this.icons[k].Position({ x : k * iwidth + pos.x, y : pos.y});
 		}
-		return position;
+		return pos;
+	}
+}
+toolbar.HorizontalBar.prototype.Show = function(cb) {
+	buildingblocks.Tile.prototype.Show.call(this,cb);
+	var _g1 = 0, _g = this.icons.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.icons[k].Show();
+	}
+}
+toolbar.HorizontalBar.prototype.Hide = function(cb) {
+	if(cb == null) buildingblocks.Tile.prototype.Hide.call(this); else buildingblocks.Tile.prototype.Hide.call(this,cb);
+	var _g1 = 0, _g = this.icons.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.icons[k].Hide();
 	}
 }
 toolbar.HorizontalBar.prototype.__class__ = toolbar.HorizontalBar;
+if(typeof animation=='undefined') animation = {}
+animation.BoxHighlighter = function(p) {
+	if( p === $_ ) return;
+	this.edges = [];
+	this.position = { x : 0.0, y : 0.0};
+	this.size = { width : 0.0, height : 0.0};
+	var _g = 0;
+	while(_g < 2) {
+		var k = _g++;
+		var _g1 = 0;
+		while(_g1 < 2) {
+			var j = _g1++;
+			this.edges.push(new buildingblocks.Tile());
+			this.edges[2 * k + j].CSS("background-color","rgb(185,200,200)");
+			this.edges[2 * k + j].CSS("border","1px solid yellow");
+			this.edges[2 * k + j].CSS("z-index","9999");
+		}
+	}
+}
+animation.BoxHighlighter.__name__ = ["animation","BoxHighlighter"];
+animation.BoxHighlighter.prototype.edges = null;
+animation.BoxHighlighter.prototype.position = null;
+animation.BoxHighlighter.prototype.size = null;
+animation.BoxHighlighter.prototype.Position = function(pos) {
+	if(pos != null) {
+		this.position = pos;
+		this.edges[0].Position(pos);
+		this.edges[1].Position(pos);
+		this.edges[2].Position({ x : pos.x + this.Size().width, y : pos.y});
+		this.edges[3].Position({ x : pos.x, y : pos.y + this.Size().height});
+	}
+	return this.position;
+}
+animation.BoxHighlighter.prototype.Size = function(siz) {
+	if(siz != null) {
+		this.size = siz;
+		this.edges[0].Size({ width : 1.0, height : siz.height});
+		this.edges[1].Size({ width : siz.width, height : 1.0});
+		this.edges[2].Size({ width : 1.0, height : siz.height});
+		this.edges[2].Position({ x : this.Position().x + siz.width, y : this.Position().y});
+		this.edges[3].Size({ width : siz.width, height : 1.0});
+		this.edges[3].Position({ x : this.Position().x, y : this.Position().y + siz.height});
+	}
+	return this.size;
+}
+animation.BoxHighlighter.prototype.Show = function() {
+	var _g1 = 0, _g = this.edges.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.edges[k].Show();
+	}
+}
+animation.BoxHighlighter.prototype.Hide = function() {
+	var _g1 = 0, _g = this.edges.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.edges[k].Hide();
+	}
+}
+animation.BoxHighlighter.prototype.__class__ = animation.BoxHighlighter;
 if(typeof tests=='undefined') tests = {}
 tests.HorizontalBarTest = function() { }
 tests.HorizontalBarTest.__name__ = ["tests","HorizontalBarTest"];

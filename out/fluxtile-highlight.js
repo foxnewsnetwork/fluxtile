@@ -181,6 +181,16 @@ js.Boot.__init = function() {
 	$closure = js.Boot.__closure;
 }
 js.Boot.prototype.__class__ = js.Boot;
+if(typeof tests=='undefined') tests = {}
+tests.BoxHighlighterTest = function() { }
+tests.BoxHighlighterTest.__name__ = ["tests","BoxHighlighterTest"];
+tests.BoxHighlighterTest.main = function() {
+	var highlight = new animation.BoxHighlighter();
+	highlight.Size({ width : 300.0, height : 200.0});
+	highlight.Position({ x : 75.0, y : 89.0});
+	highlight.Show();
+}
+tests.BoxHighlighterTest.prototype.__class__ = tests.BoxHighlighterTest;
 js.Lib = function() { }
 js.Lib.__name__ = ["js","Lib"];
 js.Lib.isIE = null;
@@ -385,6 +395,66 @@ buildingblocks.Element.prototype.HTML = function(html) {
 	return html;
 }
 buildingblocks.Element.prototype.__class__ = buildingblocks.Element;
+if(typeof animation=='undefined') animation = {}
+animation.BoxHighlighter = function(p) {
+	if( p === $_ ) return;
+	this.edges = [];
+	this.position = { x : 0.0, y : 0.0};
+	this.size = { width : 0.0, height : 0.0};
+	var _g = 0;
+	while(_g < 2) {
+		var k = _g++;
+		var _g1 = 0;
+		while(_g1 < 2) {
+			var j = _g1++;
+			this.edges.push(new buildingblocks.Tile());
+			this.edges[2 * k + j].CSS("background-color","rgb(185,200,200)");
+			this.edges[2 * k + j].CSS("border","1px solid yellow");
+			this.edges[2 * k + j].CSS("z-index","9999");
+		}
+	}
+}
+animation.BoxHighlighter.__name__ = ["animation","BoxHighlighter"];
+animation.BoxHighlighter.prototype.edges = null;
+animation.BoxHighlighter.prototype.position = null;
+animation.BoxHighlighter.prototype.size = null;
+animation.BoxHighlighter.prototype.Position = function(pos) {
+	if(pos != null) {
+		this.position = pos;
+		this.edges[0].Position(pos);
+		this.edges[1].Position(pos);
+		this.edges[2].Position({ x : pos.x + this.Size().width, y : pos.y});
+		this.edges[3].Position({ x : pos.x, y : pos.y + this.Size().height});
+	}
+	return this.position;
+}
+animation.BoxHighlighter.prototype.Size = function(siz) {
+	if(siz != null) {
+		this.size = siz;
+		this.edges[0].Size({ width : 1.0, height : siz.height});
+		this.edges[1].Size({ width : siz.width, height : 1.0});
+		this.edges[2].Size({ width : 1.0, height : siz.height});
+		this.edges[2].Position({ x : this.Position().x + siz.width, y : this.Position().y});
+		this.edges[3].Size({ width : siz.width, height : 1.0});
+		this.edges[3].Position({ x : this.Position().x, y : this.Position().y + siz.height});
+	}
+	return this.size;
+}
+animation.BoxHighlighter.prototype.Show = function() {
+	var _g1 = 0, _g = this.edges.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.edges[k].Show();
+	}
+}
+animation.BoxHighlighter.prototype.Hide = function() {
+	var _g1 = 0, _g = this.edges.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.edges[k].Hide();
+	}
+}
+animation.BoxHighlighter.prototype.__class__ = animation.BoxHighlighter;
 buildingblocks.Tile = function(p) {
 	if( p === $_ ) return;
 	this.ClearStats();
@@ -527,82 +597,6 @@ buildingblocks.Tile.prototype.p_NormalMode = function() {
 }
 buildingblocks.Tile.prototype.__class__ = buildingblocks.Tile;
 buildingblocks.Tile.__interfaces__ = [statistics.Statistics];
-if(typeof toolbar=='undefined') toolbar = {}
-toolbar.HorizontalBar = function(p) {
-	if( p === $_ ) return;
-	buildingblocks.Tile.call(this);
-	this.icons = [];
-	this.active = 0;
-}
-toolbar.HorizontalBar.__name__ = ["toolbar","HorizontalBar"];
-toolbar.HorizontalBar.__super__ = buildingblocks.Tile;
-for(var k in buildingblocks.Tile.prototype ) toolbar.HorizontalBar.prototype[k] = buildingblocks.Tile.prototype[k];
-toolbar.HorizontalBar.prototype.icons = null;
-toolbar.HorizontalBar.prototype.active = null;
-toolbar.HorizontalBar.prototype.Icon = function(img,cb) {
-	var me = this;
-	if(img == null) {
-	} else {
-		var icon = new buildingblocks.Tile();
-		icon.Image(img);
-		var iwidth = this.Size().width / this.icons.length;
-		var iheight = this.Size().height;
-		icon.Size({ width : iwidth, height : iheight});
-		var ix = this.icons.length * iwidth + this.Position().x;
-		var iy = this.Position().y;
-		icon.Position({ x : ix, y : iy});
-		var n = this.icons.length;
-		icon.Click(function(e) {
-			me.icons[me.active].CSS("border","none");
-			me.active = n;
-			icon.CSS("border","4px solid red");
-			if(cb != null) cb();
-		});
-	}
-}
-toolbar.HorizontalBar.prototype.Size = function(siz) {
-	if(siz == null) return buildingblocks.Tile.prototype.Size.call(this); else {
-		var size = buildingblocks.Tile.prototype.Size.call(this,siz);
-		var iwidth = size.width / this.icons.length;
-		var iheight = size.height;
-		var _g1 = 0, _g = this.icons.length;
-		while(_g1 < _g) {
-			var k = _g1++;
-			this.icons[k].Size({ width : iwidth, height : iheight});
-			this.icons[k].Position({ x : k * iwidth + this.Position().x, y : this.Position().y});
-		}
-		return size;
-	}
-}
-toolbar.HorizontalBar.prototype.Position = function(pos) {
-	if(pos == null) return buildingblocks.Tile.prototype.Position.call(this); else {
-		var position = buildingblocks.Tile.prototype.Position.call(this,pos);
-		var iwidth = this.Size().width / this.icons.length;
-		var _g1 = 0, _g = this.icons.length;
-		while(_g1 < _g) {
-			var k = _g1++;
-			this.icons[k].Position({ x : k * iwidth + position.x, y : position.y});
-		}
-		return position;
-	}
-}
-toolbar.HorizontalBar.prototype.__class__ = toolbar.HorizontalBar;
-if(typeof tests=='undefined') tests = {}
-tests.HorizontalBarTest = function() { }
-tests.HorizontalBarTest.__name__ = ["tests","HorizontalBarTest"];
-tests.HorizontalBarTest.main = function() {
-	var hbar = new toolbar.HorizontalBar();
-	var icons = ["madotsuki.png","madotsuki.png","madotsuki.png"];
-	var _g1 = 0, _g = icons.length;
-	while(_g1 < _g) {
-		var k = _g1++;
-		hbar.Icon(icons[k]);
-	}
-	hbar.Size({ width : 400.0, height : 75.0});
-	hbar.Position({ x : 0.0, y : 0.0});
-	hbar.Show();
-}
-tests.HorizontalBarTest.prototype.__class__ = tests.HorizontalBarTest;
 IntIter = function(min,max) {
 	if( min === $_ ) return;
 	this.min = min;
@@ -739,4 +733,4 @@ tools.Timer.TIME = haxe.Timer.stamp();
 buildingblocks.Element.ID = 0;
 buildingblocks.Element.NAME = "FFOpenVN-Tile-Element-" + Math.floor(10000 * Math.random());
 buildingblocks.Element.TestCounter = 0;
-tests.HorizontalBarTest.main()
+tests.BoxHighlighterTest.main()
