@@ -82,7 +82,7 @@ class Element {
 	
 	public function Hide(?cb : Void -> Void) : Void{ 
 		if(cb == null){ 
-			this.domContainer.hide(500, (function(element : Element){
+			this.domContainer.hide(25, (function(element : Element){
 				return function(){
 					for(k in 0...element.hides.length){
 						element.hides[k]();
@@ -97,7 +97,7 @@ class Element {
 	
 	public function Show(?cb : Void -> Void) : Void{ 
 		if(cb == null){ 
-			this.domContainer.show(250,(function(element : Element){
+			this.domContainer.show(25,(function(element : Element){
 				return function(){
 					for(k in 0...element.shows.length){
 						element.shows[k]();

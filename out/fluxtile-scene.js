@@ -239,61 +239,6 @@ Std.random = function(x) {
 	return Math.floor(Math.random() * x);
 }
 Std.prototype.__class__ = Std;
-haxe.Timer = function(time_ms) {
-	if( time_ms === $_ ) return;
-	var arr = haxe_timers;
-	this.id = arr.length;
-	arr[this.id] = this;
-	this.timerId = window.setInterval("haxe_timers[" + this.id + "].run();",time_ms);
-}
-haxe.Timer.__name__ = ["haxe","Timer"];
-haxe.Timer.delay = function(f,time_ms) {
-	var t = new haxe.Timer(time_ms);
-	t.run = function() {
-		t.stop();
-		f();
-	};
-	return t;
-}
-haxe.Timer.measure = function(f,pos) {
-	var t0 = haxe.Timer.stamp();
-	var r = f();
-	haxe.Log.trace(haxe.Timer.stamp() - t0 + "s",pos);
-	return r;
-}
-haxe.Timer.stamp = function() {
-	return Date.now().getTime() / 1000;
-}
-haxe.Timer.prototype.id = null;
-haxe.Timer.prototype.timerId = null;
-haxe.Timer.prototype.stop = function() {
-	if(this.id == null) return;
-	window.clearInterval(this.timerId);
-	var arr = haxe_timers;
-	arr[this.id] = null;
-	if(this.id > 100 && this.id == arr.length - 1) {
-		var p = this.id - 1;
-		while(p >= 0 && arr[p] == null) p--;
-		arr = arr.slice(0,p + 1);
-	}
-	this.id = null;
-}
-haxe.Timer.prototype.run = function() {
-}
-haxe.Timer.prototype.__class__ = haxe.Timer;
-if(typeof tools=='undefined') tools = {}
-tools.Timer = function() { }
-tools.Timer.__name__ = ["tools","Timer"];
-tools.Timer.Start = function() {
-	tools.Timer.TIME = haxe.Timer.stamp();
-	return tools.Timer.TIME;
-}
-tools.Timer.Stop = function() {
-	var startTime = tools.Timer.TIME;
-	var difference = tools.Timer.Start() - startTime;
-	return difference;
-}
-tools.Timer.prototype.__class__ = tools.Timer;
 if(typeof buildingblocks=='undefined') buildingblocks = {}
 buildingblocks.Element = function(p) {
 	if( p === $_ ) return;
@@ -354,7 +299,7 @@ buildingblocks.Element.prototype.Remove = function() {
 	this.domContainer.remove();
 }
 buildingblocks.Element.prototype.Hide = function(cb) {
-	if(cb == null) this.domContainer.hide(50,(function(element) {
+	if(cb == null) this.domContainer.hide(25,(function(element) {
 		return function() {
 			var _g1 = 0, _g = element.hides.length;
 			while(_g1 < _g) {
@@ -365,7 +310,7 @@ buildingblocks.Element.prototype.Hide = function(cb) {
 	})(this)); else this.hides.push(cb);
 }
 buildingblocks.Element.prototype.Show = function(cb) {
-	if(cb == null) this.domContainer.show(50,(function(element) {
+	if(cb == null) this.domContainer.show(25,(function(element) {
 		return function() {
 			var _g1 = 0, _g = element.shows.length;
 			while(_g1 < _g) {
@@ -527,6 +472,209 @@ buildingblocks.Tile.prototype.p_NormalMode = function() {
 }
 buildingblocks.Tile.prototype.__class__ = buildingblocks.Tile;
 buildingblocks.Tile.__interfaces__ = [statistics.Statistics];
+if(typeof toolbar=='undefined') toolbar = {}
+toolbar.HorizontalBar = function(p) {
+	if( p === $_ ) return;
+	buildingblocks.Tile.call(this);
+	this.icons = [];
+	this.active = 0;
+	this.highlight = new animation.BoxHighlighter();
+	this.highlight.Hide();
+}
+toolbar.HorizontalBar.__name__ = ["toolbar","HorizontalBar"];
+toolbar.HorizontalBar.__super__ = buildingblocks.Tile;
+for(var k in buildingblocks.Tile.prototype ) toolbar.HorizontalBar.prototype[k] = buildingblocks.Tile.prototype[k];
+toolbar.HorizontalBar.prototype.icons = null;
+toolbar.HorizontalBar.prototype.active = null;
+toolbar.HorizontalBar.prototype.highlight = null;
+toolbar.HorizontalBar.prototype.Icon = function(img,cb) {
+	var me = this;
+	if(img == null) {
+	} else {
+		var icon = new buildingblocks.Tile();
+		icon.Image(img);
+		var iwidth = this.Size().width / this.icons.length;
+		var iheight = this.Size().height;
+		icon.Size({ width : iwidth, height : iheight});
+		var ix = this.icons.length * iwidth + this.Position().x;
+		var iy = this.Position().y;
+		icon.Position({ x : ix, y : iy});
+		var n = this.icons.length;
+		icon.Click(function(e) {
+			me.icons[me.active].CSS("border","none");
+			me.active = n;
+			icon.CSS("border","2px solid red");
+			if(cb != null) cb();
+		});
+		icon.Mouseover(function(e) {
+			me.highlight.Position(icon.Position());
+			me.highlight.Size(icon.Size());
+			me.highlight.Show();
+		});
+		icon.Mouseleave(function(e) {
+			me.highlight.Hide();
+		});
+		this.icons.push(icon);
+	}
+}
+toolbar.HorizontalBar.prototype.Size = function(siz) {
+	if(siz == null) return buildingblocks.Tile.prototype.Size.call(this); else {
+		buildingblocks.Tile.prototype.Size.call(this,siz);
+		var iwidth = siz.width;
+		if(this.icons.length != 0) iwidth /= this.icons.length;
+		var iheight = siz.height;
+		this.highlight.Size({ width : iwidth, height : iheight});
+		var _g1 = 0, _g = this.icons.length;
+		while(_g1 < _g) {
+			var k = _g1++;
+			this.icons[k].Size({ width : iwidth, height : iheight});
+			this.icons[k].Position({ x : k * iwidth + this.Position().x, y : this.Position().y});
+		}
+		return siz;
+	}
+}
+toolbar.HorizontalBar.prototype.Position = function(pos) {
+	if(pos == null) return buildingblocks.Tile.prototype.Position.call(this); else {
+		buildingblocks.Tile.prototype.Position.call(this,pos);
+		var iwidth = this.Size().width;
+		if(this.icons.length != 0) iwidth /= this.icons.length;
+		var _g1 = 0, _g = this.icons.length;
+		while(_g1 < _g) {
+			var k = _g1++;
+			this.icons[k].Position({ x : k * iwidth + pos.x, y : pos.y});
+		}
+		return pos;
+	}
+}
+toolbar.HorizontalBar.prototype.Show = function(cb) {
+	buildingblocks.Tile.prototype.Show.call(this,cb);
+	var _g1 = 0, _g = this.icons.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.icons[k].Show();
+	}
+}
+toolbar.HorizontalBar.prototype.Hide = function(cb) {
+	if(cb == null) buildingblocks.Tile.prototype.Hide.call(this); else buildingblocks.Tile.prototype.Hide.call(this,cb);
+	var _g1 = 0, _g = this.icons.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.icons[k].Hide();
+	}
+}
+toolbar.HorizontalBar.prototype.__class__ = toolbar.HorizontalBar;
+haxe.Timer = function(time_ms) {
+	if( time_ms === $_ ) return;
+	var arr = haxe_timers;
+	this.id = arr.length;
+	arr[this.id] = this;
+	this.timerId = window.setInterval("haxe_timers[" + this.id + "].run();",time_ms);
+}
+haxe.Timer.__name__ = ["haxe","Timer"];
+haxe.Timer.delay = function(f,time_ms) {
+	var t = new haxe.Timer(time_ms);
+	t.run = function() {
+		t.stop();
+		f();
+	};
+	return t;
+}
+haxe.Timer.measure = function(f,pos) {
+	var t0 = haxe.Timer.stamp();
+	var r = f();
+	haxe.Log.trace(haxe.Timer.stamp() - t0 + "s",pos);
+	return r;
+}
+haxe.Timer.stamp = function() {
+	return Date.now().getTime() / 1000;
+}
+haxe.Timer.prototype.id = null;
+haxe.Timer.prototype.timerId = null;
+haxe.Timer.prototype.stop = function() {
+	if(this.id == null) return;
+	window.clearInterval(this.timerId);
+	var arr = haxe_timers;
+	arr[this.id] = null;
+	if(this.id > 100 && this.id == arr.length - 1) {
+		var p = this.id - 1;
+		while(p >= 0 && arr[p] == null) p--;
+		arr = arr.slice(0,p + 1);
+	}
+	this.id = null;
+}
+haxe.Timer.prototype.run = function() {
+}
+haxe.Timer.prototype.__class__ = haxe.Timer;
+if(typeof tools=='undefined') tools = {}
+tools.Timer = function() { }
+tools.Timer.__name__ = ["tools","Timer"];
+tools.Timer.Start = function() {
+	tools.Timer.TIME = haxe.Timer.stamp();
+	return tools.Timer.TIME;
+}
+tools.Timer.Stop = function() {
+	var startTime = tools.Timer.TIME;
+	var difference = tools.Timer.Start() - startTime;
+	return difference;
+}
+tools.Timer.prototype.__class__ = tools.Timer;
+if(typeof tests=='undefined') tests = {}
+tests.SceneTest = function() { }
+tests.SceneTest.__name__ = ["tests","SceneTest"];
+tests.SceneTest.main = function() {
+	var s = new visualnovel.Scene();
+	var sd = { layers : [{ image : "madotsuki.png", width : 75.0, height : 75.0, x : 145.2, y : 15.0},{ image : "madotsuki.png", width : 55.0, height : 35.0, x : 15.2, y : 65.0},{ image : "madotsuki.png", width : 25.0, height : 25.0, x : 55.2, y : 25.0}], text : "some sort of text for testing purposes goes here"};
+	s.Load(sd);
+	s.Show();
+}
+tests.SceneTest.prototype.__class__ = tests.SceneTest;
+if(typeof visualnovel=='undefined') visualnovel = {}
+visualnovel.Scene = function(p) {
+	if( p === $_ ) return;
+	buildingblocks.Tile.call(this);
+	this.text = new controls.TextControl();
+	this.text.TypePosition("%");
+	this.text.Position({ x : 0.5, y : 60.0});
+	this.text.TypeSize("%");
+	this.text.Size({ width : 99.5, height : 40.0});
+	this.tiles = [];
+}
+visualnovel.Scene.__name__ = ["visualnovel","Scene"];
+visualnovel.Scene.__super__ = buildingblocks.Tile;
+for(var k in buildingblocks.Tile.prototype ) visualnovel.Scene.prototype[k] = buildingblocks.Tile.prototype[k];
+visualnovel.Scene.prototype.text = null;
+visualnovel.Scene.prototype.tiles = null;
+visualnovel.Scene.prototype.Load = function(data) {
+	this.text.Text(data.text);
+	this.tiles = [];
+	var _g1 = 0, _g = data.layers.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.tiles.push(new buildingblocks.Tile());
+		this.tiles[k].Image(data.layers[k].image);
+		this.tiles[k].Position({ x : data.layers[k].x, y : data.layers[k].y});
+		this.tiles[k].Size({ width : data.layers[k].width, height : data.layers[k].height});
+	}
+}
+visualnovel.Scene.prototype.Show = function(cb) {
+	buildingblocks.Tile.prototype.Show.call(this,cb);
+	var _g1 = 0, _g = this.tiles.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.tiles[k].Show();
+	}
+	this.text.Show();
+}
+visualnovel.Scene.prototype.Hide = function(cb) {
+	buildingblocks.Tile.prototype.Hide.call(this,cb);
+	var _g1 = 0, _g = this.tiles.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.tiles[k].Hide();
+	}
+	this.text.Hide();
+}
+visualnovel.Scene.prototype.__class__ = visualnovel.Scene;
 if(typeof controls=='undefined') controls = {}
 controls.IconsControl = function(p) {
 	if( p === $_ ) return;
@@ -668,24 +816,66 @@ controls.TextControl.prototype.Position = function(pos) {
 	return this.backlight.Position(pos);
 }
 controls.TextControl.prototype.__class__ = controls.TextControl;
-if(typeof tests=='undefined') tests = {}
-tests.IconsControlTest = function() { }
-tests.IconsControlTest.__name__ = ["tests","IconsControlTest"];
-tests.IconsControlTest.main = function() {
-	var ic = new controls.IconsControl();
+if(typeof animation=='undefined') animation = {}
+animation.BoxHighlighter = function(p) {
+	if( p === $_ ) return;
+	this.edges = [];
+	this.position = { x : 0.0, y : 0.0};
+	this.size = { width : 0.0, height : 0.0};
 	var _g = 0;
-	while(_g < 45) {
+	while(_g < 2) {
 		var k = _g++;
-		ic.AddIcon("madotsuki.png",function() {
-			js.Lib.alert("Madotsuki");
-		});
+		var _g1 = 0;
+		while(_g1 < 2) {
+			var j = _g1++;
+			this.edges.push(new buildingblocks.Tile());
+			this.edges[2 * k + j].CSS("background-color","rgb(185,200,200)");
+			this.edges[2 * k + j].CSS("border","1px solid yellow");
+			this.edges[2 * k + j].CSS("z-index","9999");
+		}
 	}
-	ic.Size({ width : 550.0, height : 300.0});
-	ic.Position({ x : 0.0, y : 150.0});
-	ic.CSS("border","1px solid blue");
-	ic.Show();
 }
-tests.IconsControlTest.prototype.__class__ = tests.IconsControlTest;
+animation.BoxHighlighter.__name__ = ["animation","BoxHighlighter"];
+animation.BoxHighlighter.prototype.edges = null;
+animation.BoxHighlighter.prototype.position = null;
+animation.BoxHighlighter.prototype.size = null;
+animation.BoxHighlighter.prototype.Position = function(pos) {
+	if(pos != null) {
+		this.position = pos;
+		this.edges[0].Position(pos);
+		this.edges[1].Position(pos);
+		this.edges[2].Position({ x : pos.x + this.Size().width, y : pos.y});
+		this.edges[3].Position({ x : pos.x, y : pos.y + this.Size().height});
+	}
+	return this.position;
+}
+animation.BoxHighlighter.prototype.Size = function(siz) {
+	if(siz != null) {
+		this.size = siz;
+		this.edges[0].Size({ width : 1.0, height : siz.height});
+		this.edges[1].Size({ width : siz.width, height : 1.0});
+		this.edges[2].Size({ width : 1.0, height : siz.height});
+		this.edges[2].Position({ x : this.Position().x + siz.width, y : this.Position().y});
+		this.edges[3].Size({ width : siz.width, height : 1.0});
+		this.edges[3].Position({ x : this.Position().x, y : this.Position().y + siz.height});
+	}
+	return this.size;
+}
+animation.BoxHighlighter.prototype.Show = function() {
+	var _g1 = 0, _g = this.edges.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.edges[k].Show();
+	}
+}
+animation.BoxHighlighter.prototype.Hide = function() {
+	var _g1 = 0, _g = this.edges.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.edges[k].Hide();
+	}
+}
+animation.BoxHighlighter.prototype.__class__ = animation.BoxHighlighter;
 IntIter = function(min,max) {
 	if( min === $_ ) return;
 	this.min = min;
@@ -804,7 +994,6 @@ js.Boot.__init();
 	Enum = { };
 	Void = { __ename__ : ["Void"]};
 }
-if(typeof(haxe_timers) == "undefined") haxe_timers = [];
 {
 	Math.__name__ = ["Math"];
 	Math.NaN = Number["NaN"];
@@ -817,11 +1006,12 @@ if(typeof(haxe_timers) == "undefined") haxe_timers = [];
 		return isNaN(i);
 	};
 }
+if(typeof(haxe_timers) == "undefined") haxe_timers = [];
 js.Lib.onerror = null;
-tools.Timer.TIME = haxe.Timer.stamp();
 buildingblocks.Element.ID = 0;
 buildingblocks.Element.NAME = "FFOpenVN-Tile-Element-" + Math.floor(10000 * Math.random());
 buildingblocks.Element.TestCounter = 0;
+tools.Timer.TIME = haxe.Timer.stamp();
 controls.IconsControl.IconsPerLine = 5;
 controls.IconsControl.IconsPerPage = 10;
-tests.IconsControlTest.main()
+tests.SceneTest.main()
