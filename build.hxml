@@ -2,8 +2,14 @@
 
 # Uncomment the desirable target
 # JavaScript target
- -js out/fluxtile-scene.js
-	 -main tests.SceneTest
+ -js out/fluxtile-visualnovel.js
+ -main tests.VisualNovelTest
+ 
+ #-js out/fluxtile-tree.js
+ #-main tests.TreeTest
+ 
+ #-js out/fluxtile-scene.js
+ #-main tests.SceneTest
 
 #  -js out/fluxtile-iconscontrol.js
 #  -main tests.IconsControlTest

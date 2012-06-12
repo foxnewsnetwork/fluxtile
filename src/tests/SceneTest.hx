@@ -28,7 +28,10 @@ class SceneTest {
 					y : 25.0
 				}
 			], // layers
-			text : "some sort of text for testing purposes goes here"
+			text : "some sort of text for testing purposes goes here" ,
+			id : "13412304" ,
+			parent_id : "1834912834" ,
+			children_id : ["2323048234", "2384813413"]
 		} // sd
 		
 		s.Load(sd);
