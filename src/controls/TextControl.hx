@@ -33,4 +33,14 @@ class TextControl extends Tile {
 		super.Position(pos);
 		return this.backlight.Position(pos);
 	} // Position
+	
+	public override function Hide( ?cb : Void -> Void ) { 
+		super.Hide(cb);
+		this.backlight.Hide();
+	} // Hide
+	
+	public override function Show(?cb : Void -> Void) { 
+		super.Show(cb);
+		this.backlight.Show();
+	} // Show
 } // TextControl

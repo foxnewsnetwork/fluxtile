@@ -23,6 +23,15 @@ datastructures.TreeNode.Plant = function(seed) {
 datastructures.TreeNode.prototype.children = null;
 datastructures.TreeNode.prototype.data = null;
 datastructures.TreeNode.prototype.isroot = null;
+datastructures.TreeNode.prototype.Print = function() {
+	var output = "{ data => " + this.data + "} has Children ->";
+	var _g1 = 0, _g = this.Children().length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		output += this.Children()[k].Print();
+	}
+	return output;
+}
 datastructures.TreeNode.prototype.Branch = function(data) {
 	var child = new datastructures.TreeNode();
 	child.data = data;
@@ -332,8 +341,9 @@ tests.VisualNovelTest.main = function() {
 	var _g = 0;
 	while(_g < 25) {
 		var k = _g++;
-		sd[k].parent_id = k - 1 > 0?k - 1:null;
-		sd[k].children_id = k + 1 < 25?[k + 1]:null;
+		sd[k].parent_id = k > 0?k - 1:null;
+		sd[k].children_id.push(k + 1);
+		sd[k].children_id.push(k < 25?k + 25:null);
 	}
 	var _g = 25;
 	while(_g < 50) {
@@ -545,6 +555,14 @@ controls.TextControl.prototype.Position = function(pos) {
 	buildingblocks.Tile.prototype.Position.call(this,pos);
 	return this.backlight.Position(pos);
 }
+controls.TextControl.prototype.Hide = function(cb) {
+	buildingblocks.Tile.prototype.Hide.call(this,cb);
+	this.backlight.Hide();
+}
+controls.TextControl.prototype.Show = function(cb) {
+	buildingblocks.Tile.prototype.Show.call(this,cb);
+	this.backlight.Show();
+}
 controls.TextControl.prototype.__class__ = controls.TextControl;
 if(typeof tools=='undefined') tools = {}
 tools.Random = function() { }
@@ -623,12 +641,14 @@ for(var k in buildingblocks.Tile.prototype ) visualnovel.Scene.prototype[k] = bu
 visualnovel.Scene.prototype.text = null;
 visualnovel.Scene.prototype.tiles = null;
 visualnovel.Scene.prototype.Load = function(data) {
+	this.text.Hide();
 	this.text.Text(data.text);
 	this.tiles = [];
 	var _g1 = 0, _g = data.layers.length;
 	while(_g1 < _g) {
 		var k = _g1++;
 		this.tiles.push(new buildingblocks.Tile());
+		this.tiles[k].Hide();
 		this.tiles[k].Image(data.layers[k].image);
 		this.tiles[k].Position({ x : data.layers[k].x, y : data.layers[k].y});
 		this.tiles[k].Size({ width : data.layers[k].width, height : data.layers[k].height});
@@ -679,6 +699,8 @@ visualnovel.VisualNovel = function(p) {
 	this.scene_history = [];
 	this.loading = new buildingblocks.Tile();
 	this.spotlight = new animation.Spotlight();
+	this.loading.Show();
+	this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
 	this.loading.ClassName("visualnovel-placeholder now-loading");
 	this.tabs.ClassName("visualnovel-ui tabs-holder");
 	var btn = new buildingblocks.Tile();
@@ -705,6 +727,11 @@ visualnovel.VisualNovel = function(p) {
 		me.spotlight.Off();
 	});
 	this.ui.set("previous",btn2);
+	var $it0 = this.ui.iterator();
+	while( $it0.hasNext() ) {
+		var u = $it0.next();
+		u.Hide();
+	}
 }
 visualnovel.VisualNovel.__name__ = ["visualnovel","VisualNovel"];
 visualnovel.VisualNovel.__super__ = buildingblocks.Tile;
@@ -724,6 +751,7 @@ visualnovel.VisualNovel.prototype.Start = function() {
 	this.Hide();
 	this.Show();
 	return this.scenes.get(this.active_scene.Data() + "");
+	this.loading.Hide();
 }
 visualnovel.VisualNovel.prototype.Load = function(data) {
 	var lambda_FindChildren = function(t) {
@@ -742,24 +770,23 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		var k = _g1++;
 		var scene = new visualnovel.Scene();
 		scene.Load(data[k]);
+		scene.Hide();
 		this.scenes.set(data[k].id + "",scene);
 		if(data[k].parent_id == null) this.scene_tree = datastructures.Tree.Create(data[k].id);
-		scene.Hide();
 	}
 	this.active_scene = this.scene_tree;
-	haxe.Log.trace(this.active_scene,{ fileName : "VisualNovel.hx", lineNumber : 112, className : "visualnovel.VisualNovel", methodName : "Load"});
 	if(this.scene_tree == null) throw "Bad scene data - attempted cirrcular tree depedence. Seriously, please don't write trees that are their own parents";
 	var leafs = lambda_FindChildren(this.scene_tree);
+	var children = [];
 	while(leafs.length > 0) {
-		var children = [];
+		children = [];
 		var _g1 = 0, _g = leafs.length;
 		while(_g1 < _g) {
 			var k = _g1++;
-			children.concat(lambda_FindChildren(leafs[k]));
+			children = children.concat(lambda_FindChildren(leafs[k]));
 		}
 		leafs = children;
 	}
-	haxe.Log.trace(this.scene_tree,{ fileName : "VisualNovel.hx", lineNumber : 128, className : "visualnovel.VisualNovel", methodName : "Load"});
 }
 visualnovel.VisualNovel.prototype.Fork = function(id) {
 	var scene = new visualnovel.Scene();
@@ -801,6 +828,7 @@ visualnovel.VisualNovel.prototype.Hide = function(cb) {
 		var u = $it1.next();
 		u.Hide();
 	}
+	this.loading.Hide();
 }
 visualnovel.VisualNovel.prototype.Show = function(cb) {
 	buildingblocks.Tile.prototype.Show.call(this,cb);

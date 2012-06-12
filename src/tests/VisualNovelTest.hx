@@ -30,14 +30,21 @@ class VisualNovelTest {
 		
 		// simulation part 2
 		for ( k in 0...25 ) { 
-			sd[k].parent_id = k - 1 > 0 ? k - 1 : null;
-			sd[k].children_id = k + 1 < 25 ? [k + 1] : null ; 	
+			sd[k].parent_id = k > 0 ? k - 1 : null;
+			sd[k].children_id.push( k + 1 ) ;
+			sd[k].children_id.push( k < 25 ? k + 25 : null ); 	
 		} // for
 		for( k in 25...50 ) {
 			sd[k].parent_id = k - 25;
 			sd[k].children_id = null;
-		} // for 
+		} // for
+		/*
+		for( k in 0...sd.length ) { 
+			trace( { id : sd[k].id, parent_id : sd[k].parent_id, children_id : sd[k].children_id, text : sd[k].text } );
+		}  
+		*/
 		vn.Load(sd);
 		vn.Start();
+		
 	} // main
 } // VisualNovelTest

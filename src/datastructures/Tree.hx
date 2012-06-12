@@ -29,6 +29,14 @@ class TreeNode<T> {
 	/****
 	* Public accessor methods
 	***/
+	// Use for debugging
+	public function Print() : String { 
+		var output = "{ data => " + this.data + "} has Children ->";
+		for( k in 0...this.Children().length) {
+			output += this.Children()[k].Print();
+		} // for k
+		return output;
+	} // Print
 	/*
 	public function Parent() : TreeNode<T> { 
 		return this.parent;

@@ -23,12 +23,14 @@ class Scene extends Tile {
 	
 	public function Load( data : SceneData ) : Void {
 		// Step 1: Load the text
+		this.text.Hide();
 		this.text.Text(data.text);
 		
 		// Step 2: Load the tiles
 		this.tiles = [];
 		for( k in 0...data.layers.length ) {
 			this.tiles.push(new Tile());
+			this.tiles[k].Hide();
 			this.tiles[k].Image(data.layers[k].image);
 			this.tiles[k].Position({ x : data.layers[k].x, y : data.layers[k].y});
 			this.tiles[k].Size({ width : data.layers[k].width, height : data.layers[k].height});

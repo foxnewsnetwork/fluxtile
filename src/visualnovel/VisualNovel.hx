@@ -35,6 +35,8 @@ class VisualNovel extends Tile {
 		this.spotlight = new Spotlight();
 		
 		// Step 2: Set UI
+		this.loading.Show();
+		this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
 		this.loading.ClassName("visualnovel-placeholder now-loading");
 		this.tabs.ClassName("visualnovel-ui tabs-holder");
 		var btn = new Tile();
@@ -64,6 +66,9 @@ class VisualNovel extends Tile {
 		this.ui.set("previous", btn2 );
 		
 		// Step 3: Set styles
+		for( u in this.ui ) { 
+			u.Hide();
+		} // for
 	} // new
 	
 	// Starts off the visual novel at the root scene
@@ -80,6 +85,7 @@ class VisualNovel extends Tile {
 			
 		// Step 4: Fish out the scene in question
 		return this.scenes.get(this.active_scene.Data() + "");
+		this.loading.Hide();
 	} // Start
 	
 	public function Load( data : Array<SceneData> ): Void { 
@@ -91,8 +97,9 @@ class VisualNovel extends Tile {
 					children.push( t.Branch(data[k].id) );
 				} // if
 			} // for k
+			// trace(children);
 			return children;
-		} // FindChildren
+		}; // FindChildren
 		
 		// Step 1: Load up scenes
 		this.scenes = new Hash<Scene>();
@@ -100,16 +107,15 @@ class VisualNovel extends Tile {
 		for( k in 0...data.length ) {
 			var scene = new Scene();
 			scene.Load(data[k]);
+			scene.Hide();
 			this.scenes.set(data[k].id + "", scene );
 			if ( data[k].parent_id == null ) { 
 				this.scene_tree = Tree.Create(data[k].id);
 			} // if
-			scene.Hide();
 		} // for k
 		
 		// Step 1.5: Tracing a bit
 		this.active_scene = this.scene_tree;
-		trace( this.active_scene );
 		
 		// Step 2: Error-handling
 		if ( this.scene_tree == null ) { 
@@ -118,14 +124,17 @@ class VisualNovel extends Tile {
 		
 		// Step 3: Loading scene_tree data
 		var leafs : Array<TreeNode<Int>> = lambda_FindChildren( this.scene_tree );
-		while( leafs.length > 0 ) { 
-			var children : Array<TreeNode<Int>> = [];
-			for( k in 0...leafs.length ) { 
-				children.concat( lambda_FindChildren(leafs[k]) );
+		var children : Array<TreeNode<Int>> = [];
+		while( leafs.length > 0 ) {
+			children = [];
+			for( k in 0...leafs.length ) {
+				// Fixed a ridiculous issue with concat not altering the original vector 
+				children = children.concat( lambda_FindChildren(leafs[k]) );
 			} // for
+			// trace(children);
 			leafs = children;
 		} // while
-		trace( this.scene_tree );
+
 	} // Load
 	
 	// Creates a new scene and attaches it wherever we are
@@ -190,6 +199,7 @@ class VisualNovel extends Tile {
 		 for( u in this.ui ) { 
 			u.Hide();
 		} // for
+		this.loading.Hide();
 	} // Hide
 	
 	public override function Show( ?cb : Void -> Void ) { 
