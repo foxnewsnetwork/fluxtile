@@ -9,34 +9,39 @@ class Tree <T>{
 } // Tree
 
 class TreeNode<T> { 
-	private var parent : TreeNode<T>;
+	// private var parent : TreeNode<T>;
 	private var children : Array<TreeNode<T>>;
 	private var data : T;
+	private var isroot : Bool;
 	
 	/****
 	* Static methods
 	***/
 	public static function Plant<T>(seed : T) : TreeNode<T> { 
 		var root = new TreeNode<T>();
-		root.parent = null;
+		// root.parent = null;
 		root.children = [];
 		root.data = seed;
+		root.isroot = true;
 		return root;
 	} // Seed
 	
 	/****
 	* Public accessor methods
 	***/
+	/*
 	public function Parent() : TreeNode<T> { 
 		return this.parent;
 	} // Parent
+	*/
 	
 	// Creates a child
 	public function Branch( data : T) : TreeNode<T> { 
 		var child = new TreeNode<T>();
-		child.parent = this;
-		child.parent.children.push(child);
+		// child.parent = this;
+		// child.parent.children.push(child);
 		child.data = data;
+		this.children.push(child);
 		return child;
 	} // Child
 	
@@ -55,12 +60,7 @@ class TreeNode<T> {
 	***/
 	// Roots have no parents
 	public function IsRoot() : Bool { 
-		if( this.parent == null ) { 
-			return true;
-		} // if
-		else { 
-			return false;
-		} // else
+		return this.isroot;
 	} // IsRoot
 	
 	// Leaves have no children
@@ -75,5 +75,6 @@ class TreeNode<T> {
 	***/
 	private function new(){ 
 		this.children = [];
+		this.isroot = false;
 	} // new 
 } // TreeNode

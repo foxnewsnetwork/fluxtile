@@ -10,26 +10,23 @@ datastructures.Tree.prototype.__class__ = datastructures.Tree;
 datastructures.TreeNode = function(p) {
 	if( p === $_ ) return;
 	this.children = [];
+	this.isroot = false;
 }
 datastructures.TreeNode.__name__ = ["datastructures","TreeNode"];
 datastructures.TreeNode.Plant = function(seed) {
 	var root = new datastructures.TreeNode();
-	root.parent = null;
 	root.children = [];
 	root.data = seed;
+	root.isroot = true;
 	return root;
 }
-datastructures.TreeNode.prototype.parent = null;
 datastructures.TreeNode.prototype.children = null;
 datastructures.TreeNode.prototype.data = null;
-datastructures.TreeNode.prototype.Parent = function() {
-	return this.parent;
-}
+datastructures.TreeNode.prototype.isroot = null;
 datastructures.TreeNode.prototype.Branch = function(data) {
 	var child = new datastructures.TreeNode();
-	child.parent = this;
-	child.parent.children.push(child);
 	child.data = data;
+	this.children.push(child);
 	return child;
 }
 datastructures.TreeNode.prototype.Children = function() {
@@ -40,7 +37,7 @@ datastructures.TreeNode.prototype.Data = function(d) {
 	return this.data;
 }
 datastructures.TreeNode.prototype.IsRoot = function() {
-	if(this.parent == null) return true; else return false;
+	return this.isroot;
 }
 datastructures.TreeNode.prototype.IsLeaf = function() {
 	if(this.children.length == 0) return true; else return false;
@@ -75,6 +72,14 @@ buildingblocks.Element.prototype.shows = null;
 buildingblocks.Element.prototype.parent = null;
 buildingblocks.Element.prototype.timer = null;
 buildingblocks.Element.prototype.bgcolor = null;
+buildingblocks.Element.prototype.class_name = null;
+buildingblocks.Element.prototype.ClassName = function(cn) {
+	if(cn != null) {
+		this.domContainer.removeClass(this.class_name).addClass(cn);
+		this.class_name = cn;
+	}
+	return this.class_name;
+}
 buildingblocks.Element.prototype.TypePosition = function(type) {
 	if(type != null) this.type_position = type;
 	return this.type_position;
@@ -656,9 +661,34 @@ IntIter.prototype.next = function() {
 IntIter.prototype.__class__ = IntIter;
 visualnovel.VisualNovel = function(p) {
 	if( p === $_ ) return;
+	var me = this;
 	buildingblocks.Tile.call(this);
 	this.scenes = new Hash();
 	this.tabs = new toolbar.HorizontalBar();
+	this.ui = new Hash();
+	this.permission = new Hash();
+	this.scene_history = [];
+	var btn = new buildingblocks.Tile();
+	btn.TypePosition("%");
+	btn.Position({ x : 90.0, y : 40.0});
+	btn.Size({ width : 75.0, height : 40.0});
+	btn.Image("madotsuki.png");
+	btn.Click(function(e) {
+		btn.CSS("border","1px solid red");
+		me.Next();
+	});
+	this.ui.set("next",btn);
+	btn = new buildingblocks.Tile();
+	btn.TypePosition("%");
+	btn.Position({ x : 90.0, y : 50.0});
+	btn.Size({ width : 75.0, height : 40.0});
+	btn.Image("madotsuki.png");
+	btn.Click(function(e) {
+		btn.CSS("border","1px solid red");
+		me.Previous();
+	});
+	this.ui.set("previous",btn);
+	this.ui.set("fork",new buildingblocks.Tile());
 }
 visualnovel.VisualNovel.__name__ = ["visualnovel","VisualNovel"];
 visualnovel.VisualNovel.__super__ = buildingblocks.Tile;
@@ -666,15 +696,28 @@ for(var k in buildingblocks.Tile.prototype ) visualnovel.VisualNovel.prototype[k
 visualnovel.VisualNovel.prototype.scenes = null;
 visualnovel.VisualNovel.prototype.scene_tree = null;
 visualnovel.VisualNovel.prototype.active_scene = null;
+visualnovel.VisualNovel.prototype.scene_history = null;
 visualnovel.VisualNovel.prototype.loading = null;
 visualnovel.VisualNovel.prototype.tabs = null;
+visualnovel.VisualNovel.prototype.ui = null;
+visualnovel.VisualNovel.prototype.permission = null;
 visualnovel.VisualNovel.prototype.Start = function() {
 	this.active_scene = this.scene_tree;
+	this.scene_history = [];
 	this.Hide();
 	this.Show();
 	return this.scenes.get(this.active_scene.Data() + "");
 }
 visualnovel.VisualNovel.prototype.Load = function(data) {
+	var lambda_FindChildren = function(t) {
+		var children = [];
+		var _g1 = 0, _g = data.length;
+		while(_g1 < _g) {
+			var k = _g1++;
+			if(t.Data() == data[k].parent_id) children.push(t.Branch(data[k].id));
+		}
+		return children;
+	};
 	this.scenes = new Hash();
 	this.scene_tree = null;
 	var _g1 = 0, _g = data.length;
@@ -687,39 +730,19 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		scene.Hide();
 	}
 	this.active_scene = this.scene_tree;
+	haxe.Log.trace(this.active_scene,{ fileName : "VisualNovel.hx", lineNumber : 104, className : "visualnovel.VisualNovel", methodName : "Load"});
 	if(this.scene_tree == null) throw "Bad scene data - attempted cirrcular tree depedence. Seriously, please don't write trees that are their own parents";
-	var leafs = [this.scene_tree];
-	while((function(nodes) {
-		var flag = false;
-		var _g1 = 0, _g = nodes.length;
-		while(_g1 < _g) {
-			var k = _g1++;
-			if(nodes[k].Children().length > 0) {
-				flag = true;
-				break;
-			}
-		}
-		return flag;
-	})(leafs)) {
+	var leafs = lambda_FindChildren(this.scene_tree);
+	while(leafs.length > 0) {
 		var children = [];
 		var _g1 = 0, _g = leafs.length;
 		while(_g1 < _g) {
 			var k = _g1++;
-			var leaf = leafs[k];
-			var _g3 = 0, _g2 = data.length;
-			while(_g3 < _g2) {
-				var j = _g3++;
-				if(data[j].id == leaf.Data()) {
-					var _g5 = 0, _g4 = data[j].children_id.length;
-					while(_g5 < _g4) {
-						var h = _g5++;
-						children.push(leaf.Branch(data[j].children_id[h]));
-					}
-				}
-			}
+			children.concat(lambda_FindChildren(leafs[k]));
 		}
 		leafs = children;
 	}
+	haxe.Log.trace(this.scene_tree,{ fileName : "VisualNovel.hx", lineNumber : 120, className : "visualnovel.VisualNovel", methodName : "Load"});
 }
 visualnovel.VisualNovel.prototype.Fork = function(id) {
 	var scene = new visualnovel.Scene();
@@ -730,20 +753,21 @@ visualnovel.VisualNovel.prototype.Fork = function(id) {
 	return scene;
 }
 visualnovel.VisualNovel.prototype.Next = function(choice) {
+	if(this.active_scene.Children().length < 1) return null;
 	var selection = 0;
 	if(choice != null) selection = choice;
+	this.scene_history.push(this.active_scene);
 	this.scenes.get(this.active_scene.Data() + "").Hide();
 	this.active_scene = this.active_scene.Children()[selection];
-	var next_id = this.active_scene.Data();
-	var scene = this.scenes.get(next_id + "");
+	var scene = this.scenes.get(this.active_scene.Data() + "");
 	scene.Show();
 	return scene;
 }
 visualnovel.VisualNovel.prototype.Previous = function() {
+	if(this.scene_history.length < 1) return null;
 	this.scenes.get(this.active_scene.Data() + "").Hide();
-	this.active_scene = this.active_scene.Parent();
-	var prev_id = this.active_scene.Data();
-	var scene = this.scenes.get(prev_id + "");
+	this.active_scene = this.scene_history.pop();
+	var scene = this.scenes.get(this.active_scene.Data() + "");
 	scene.Show();
 	return scene;
 }
@@ -755,11 +779,21 @@ visualnovel.VisualNovel.prototype.Hide = function(cb) {
 		scene.Hide();
 	}
 	this.tabs.Hide();
+	var $it1 = this.ui.iterator();
+	while( $it1.hasNext() ) {
+		var u = $it1.next();
+		u.Hide();
+	}
 }
 visualnovel.VisualNovel.prototype.Show = function(cb) {
 	buildingblocks.Tile.prototype.Show.call(this,cb);
 	this.scenes.get(this.active_scene.Data() + "").Show();
 	this.tabs.Show();
+	var $it0 = this.ui.iterator();
+	while( $it0.hasNext() ) {
+		var u = $it0.next();
+		u.Show();
+	}
 }
 visualnovel.VisualNovel.prototype.__class__ = visualnovel.VisualNovel;
 Std = function() { }

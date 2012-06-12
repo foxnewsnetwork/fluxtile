@@ -15,8 +15,17 @@ class Element {
 	private var parent : JQuery; // defaults to body
 	private var timer : haxe.Timer;
 	private var bgcolor : String;
+	private var class_name : String; // html dom class for styling purposes
 	
 	public static var TestCounter : Int = 0;
+	
+	public function ClassName( ?cn : String ) { 
+		if ( cn != null ) {
+			this.domContainer.removeClass(this.class_name).addClass( cn );
+			this.class_name = cn;
+		} // if
+		return this.class_name;
+	} // ClassName
 	
 	public function new(){
 		this.hides = [];
