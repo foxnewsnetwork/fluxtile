@@ -30,8 +30,8 @@ class Element {
 	public function new(){
 		this.hides = [];
 		this.shows = []; 
-		this.position = { x : 0.0, y : 0.0 };
-		this.size = { width : 75.0, height : 75.0 };
+		this.position = { x : null, y : null };
+		this.size = { width : null, height : null };
 		this.domBody = new JQuery( "body" );
 		this.parent = domBody;
 		domBody.append("<div id='" + Element.NAME + "-" + Element.ID + "'></div>");
@@ -53,8 +53,11 @@ class Element {
 	
 	// Position is always with respect to the parent
 	public function Position( ?pos : { x : Float, y : Float } ) : { x : Float, y : Float }{ 
-		Element.TestCounter++;
-		if( pos == null ){ 
+		if( pos == null ){
+			if ( this.position.x == null || this.position.y == null ) { 
+				this.position.x = this.domContainer.position().left + 0.0;
+				this.position.y = this.domContainer.position().top + 0.0; 
+			} // if
 			return this.position;
 		} //end if
 		this.position = pos;
@@ -75,6 +78,10 @@ class Element {
 	
 	public function Size( ?siz : { width : Float, height : Float } ) : { width : Float, height : Float }{ 
 		if( siz == null ){ 
+			if ( this.size.height == null || this.size.width == null ) {
+				this.size.width = this.domContainer.width() + 0.0;
+				this.size.height = this.domContainer.height() + 0.0; 
+			} // if
 			return this.size;
 		} // end if
 		this.size = siz;

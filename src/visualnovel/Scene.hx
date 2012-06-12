@@ -17,10 +17,7 @@ class Scene extends Tile {
 	public function new() { 
 		super();
 		this.text = new TextControl();
-		this.text.TypePosition("%");
-		this.text.Position({ x : 0.5, y : 60.0 });
-		this.text.TypeSize("%");
-		this.text.Size({width : 99.5 , height : 40.0 });
+		this.text.ClassName("scene-text textbox");
 		this.tiles = [];
 	} // new
 	

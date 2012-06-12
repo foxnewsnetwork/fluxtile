@@ -4,6 +4,7 @@ import buildingblocks.Tile;
 import controls.IconsControl;
 import controls.TextControl;
 import datastructures.Tree;
+import animation.Spotlight;
 
 class VisualNovel extends Tile {
 	/****
@@ -17,6 +18,7 @@ class VisualNovel extends Tile {
 	private var tabs : HorizontalBar; // Control bar
 	private var ui : Hash<Tile>; // buttons, clickers, etc.
 	private var permission : Hash<Int>; // permission levels
+	private var spotlight : Spotlight; // used to highlight stuff
 	
 	/****
 	* Public methods
@@ -29,31 +31,37 @@ class VisualNovel extends Tile {
 		this.ui = new Hash<Tile>();
 		this.permission = new Hash<Int>();
 		this.scene_history = [];
+		this.loading = new Tile();
+		this.spotlight = new Spotlight();
 		
 		// Step 2: Set UI
+		this.loading.ClassName("visualnovel-placeholder now-loading");
+		this.tabs.ClassName("visualnovel-ui tabs-holder");
 		var btn = new Tile();
-		btn.TypePosition("%");
-		btn.Position({ x : 90.0, y : 40.0 });
-		btn.Size({ width : 75.0, height : 40.0 });
-		btn.Image("madotsuki.png");
+		btn.ClassName("visualnovel-ui btn-next");
 		btn.Click(function(e){
-			btn.CSS("border", "1px solid red");
 			this.Next();
 		}); // Click
+		btn.Mouseover(function(e){ 
+			this.spotlight.On(btn.Size(), btn.Position());
+		} );
+		btn.Mouseleave(function(e){ 
+			this.spotlight.Off();
+		});
 		this.ui.set("next", btn );
 		
-		btn = new Tile();
-		btn.TypePosition("%");
-		btn.Position({ x : 90.0, y : 50.0 });
-		btn.Size({ width : 75.0, height : 40.0 });
-		btn.Image("madotsuki.png");
-		btn.Click(function(e){
-			btn.CSS("border", "1px solid red");
+		var btn2 = new Tile();
+		btn2.ClassName("visualnovel-ui btn-previous");
+		btn2.Click(function(e){
 			this.Previous();
 		}); // Click
-		this.ui.set("previous", btn );
-		this.ui.set("fork", new Tile() );
-		
+		btn2.Mouseover(function(e){ 
+			this.spotlight.On(btn2.Size(), btn2.Position());
+		} );
+		btn2.Mouseleave(function(e){ 
+			this.spotlight.Off();
+		});
+		this.ui.set("previous", btn2 );
 		
 		// Step 3: Set styles
 	} // new

@@ -40,6 +40,7 @@ class HorizontalBar extends Tile {
 		else { 
 			// Step 1: Setting up the icon
 			var icon = new Tile();
+			icon.ClassName("horizontal-bar-icon icon" + this.icons.length);
 			icon.Image(img);
 			
 			// Step 2: Configuring size

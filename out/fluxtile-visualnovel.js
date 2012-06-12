@@ -48,8 +48,8 @@ buildingblocks.Element = function(p) {
 	if( p === $_ ) return;
 	this.hides = [];
 	this.shows = [];
-	this.position = { x : 0.0, y : 0.0};
-	this.size = { width : 75.0, height : 75.0};
+	this.position = { x : null, y : null};
+	this.size = { width : null, height : null};
 	this.domBody = new js.JQuery("body");
 	this.parent = this.domBody;
 	this.domBody.append("<div id='" + buildingblocks.Element.NAME + "-" + buildingblocks.Element.ID + "'></div>");
@@ -85,8 +85,13 @@ buildingblocks.Element.prototype.TypePosition = function(type) {
 	return this.type_position;
 }
 buildingblocks.Element.prototype.Position = function(pos) {
-	buildingblocks.Element.TestCounter++;
-	if(pos == null) return this.position;
+	if(pos == null) {
+		if(this.position.x == null || this.position.y == null) {
+			this.position.x = this.domContainer.position().left + 0.0;
+			this.position.y = this.domContainer.position().top + 0.0;
+		}
+		return this.position;
+	}
 	this.position = pos;
 	var x = this.position.x;
 	var y = this.position.y;
@@ -99,7 +104,13 @@ buildingblocks.Element.prototype.TypeSize = function(type) {
 	return this.type_size;
 }
 buildingblocks.Element.prototype.Size = function(siz) {
-	if(siz == null) return this.size;
+	if(siz == null) {
+		if(this.size.height == null || this.size.width == null) {
+			this.size.width = this.domContainer.width() + 0.0;
+			this.size.height = this.domContainer.height() + 0.0;
+		}
+		return this.size;
+	}
 	this.size = siz;
 	this.domContainer.css("width",this.size.width + this.type_size);
 	this.domContainer.css("height",this.size.height + this.type_size);
@@ -354,6 +365,7 @@ toolbar.HorizontalBar.prototype.Icon = function(img,cb) {
 	if(img == null) {
 	} else {
 		var icon = new buildingblocks.Tile();
+		icon.ClassName("horizontal-bar-icon icon" + this.icons.length);
 		icon.Image(img);
 		var iwidth = this.Size().width / this.icons.length;
 		var iheight = this.Size().height;
@@ -602,10 +614,7 @@ visualnovel.Scene = function(p) {
 	if( p === $_ ) return;
 	buildingblocks.Tile.call(this);
 	this.text = new controls.TextControl();
-	this.text.TypePosition("%");
-	this.text.Position({ x : 0.5, y : 60.0});
-	this.text.TypeSize("%");
-	this.text.Size({ width : 99.5, height : 40.0});
+	this.text.ClassName("scene-text textbox");
 	this.tiles = [];
 }
 visualnovel.Scene.__name__ = ["visualnovel","Scene"];
@@ -668,27 +677,34 @@ visualnovel.VisualNovel = function(p) {
 	this.ui = new Hash();
 	this.permission = new Hash();
 	this.scene_history = [];
+	this.loading = new buildingblocks.Tile();
+	this.spotlight = new animation.Spotlight();
+	this.loading.ClassName("visualnovel-placeholder now-loading");
+	this.tabs.ClassName("visualnovel-ui tabs-holder");
 	var btn = new buildingblocks.Tile();
-	btn.TypePosition("%");
-	btn.Position({ x : 90.0, y : 40.0});
-	btn.Size({ width : 75.0, height : 40.0});
-	btn.Image("madotsuki.png");
+	btn.ClassName("visualnovel-ui btn-next");
 	btn.Click(function(e) {
-		btn.CSS("border","1px solid red");
 		me.Next();
 	});
+	btn.Mouseover(function(e) {
+		me.spotlight.On(btn.Size(),btn.Position());
+	});
+	btn.Mouseleave(function(e) {
+		me.spotlight.Off();
+	});
 	this.ui.set("next",btn);
-	btn = new buildingblocks.Tile();
-	btn.TypePosition("%");
-	btn.Position({ x : 90.0, y : 50.0});
-	btn.Size({ width : 75.0, height : 40.0});
-	btn.Image("madotsuki.png");
-	btn.Click(function(e) {
-		btn.CSS("border","1px solid red");
+	var btn2 = new buildingblocks.Tile();
+	btn2.ClassName("visualnovel-ui btn-previous");
+	btn2.Click(function(e) {
 		me.Previous();
 	});
-	this.ui.set("previous",btn);
-	this.ui.set("fork",new buildingblocks.Tile());
+	btn2.Mouseover(function(e) {
+		me.spotlight.On(btn2.Size(),btn2.Position());
+	});
+	btn2.Mouseleave(function(e) {
+		me.spotlight.Off();
+	});
+	this.ui.set("previous",btn2);
 }
 visualnovel.VisualNovel.__name__ = ["visualnovel","VisualNovel"];
 visualnovel.VisualNovel.__super__ = buildingblocks.Tile;
@@ -701,6 +717,7 @@ visualnovel.VisualNovel.prototype.loading = null;
 visualnovel.VisualNovel.prototype.tabs = null;
 visualnovel.VisualNovel.prototype.ui = null;
 visualnovel.VisualNovel.prototype.permission = null;
+visualnovel.VisualNovel.prototype.spotlight = null;
 visualnovel.VisualNovel.prototype.Start = function() {
 	this.active_scene = this.scene_tree;
 	this.scene_history = [];
@@ -730,7 +747,7 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		scene.Hide();
 	}
 	this.active_scene = this.scene_tree;
-	haxe.Log.trace(this.active_scene,{ fileName : "VisualNovel.hx", lineNumber : 104, className : "visualnovel.VisualNovel", methodName : "Load"});
+	haxe.Log.trace(this.active_scene,{ fileName : "VisualNovel.hx", lineNumber : 112, className : "visualnovel.VisualNovel", methodName : "Load"});
 	if(this.scene_tree == null) throw "Bad scene data - attempted cirrcular tree depedence. Seriously, please don't write trees that are their own parents";
 	var leafs = lambda_FindChildren(this.scene_tree);
 	while(leafs.length > 0) {
@@ -742,7 +759,7 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		}
 		leafs = children;
 	}
-	haxe.Log.trace(this.scene_tree,{ fileName : "VisualNovel.hx", lineNumber : 120, className : "visualnovel.VisualNovel", methodName : "Load"});
+	haxe.Log.trace(this.scene_tree,{ fileName : "VisualNovel.hx", lineNumber : 128, className : "visualnovel.VisualNovel", methodName : "Load"});
 }
 visualnovel.VisualNovel.prototype.Fork = function(id) {
 	var scene = new visualnovel.Scene();
@@ -1130,6 +1147,28 @@ controls.IconsControl.prototype.p_resize = function() {
 	this.ipage.Position({ x : p.x + s.width / 2, y : p.y});
 }
 controls.IconsControl.prototype.__class__ = controls.IconsControl;
+animation.Spotlight = function(p) {
+	if( p === $_ ) return;
+	var me = this;
+	this.highlighter = new animation.BoxHighlighter();
+	this.mouse = { x : 0.0, y : 0.0};
+	new js.JQuery("body").mousemove(function(e) {
+		me.mouse.x = e.pageX + 0.0;
+		me.mouse.y = e.pageY + 0.0;
+	});
+}
+animation.Spotlight.__name__ = ["animation","Spotlight"];
+animation.Spotlight.prototype.highlighter = null;
+animation.Spotlight.prototype.mouse = null;
+animation.Spotlight.prototype.On = function(size,pos) {
+	this.highlighter.Size(size);
+	if(pos != null) this.highlighter.Position(pos); else this.highlighter.Position({ x : this.mouse.x - size.width / 2, y : this.mouse.y - size.height / 2});
+	this.highlighter.Show();
+}
+animation.Spotlight.prototype.Off = function() {
+	this.highlighter.Hide();
+}
+animation.Spotlight.prototype.__class__ = animation.Spotlight;
 Hash = function(p) {
 	if( p === $_ ) return;
 	this.h = {}
