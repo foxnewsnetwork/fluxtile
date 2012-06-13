@@ -23,3 +23,8 @@ visual-novel-fork-icon
 	fork-img-#{parent_id}-#{id}
 visual-novel-fork-text
 	fork-txt-#{parent_id}-#{id}
+	
+ul.vertical-bar
+li.vertical-bar-li-#{k}
+button.vertical-bar-btn 
+button.vbar-btn-k#{k}

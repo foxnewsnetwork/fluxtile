@@ -20,6 +20,10 @@ class VerticalBar extends Tile {
 		this.li = [];
 	} // new
 	
+	public function Purge() { 
+		this.ul.html("");
+	} // Purge
+	
 	public function Icon( image : String, ?cb : Void -> Void ) { 
 		this.images.push( image );
 		var k = this.li.length;
@@ -32,7 +36,7 @@ class VerticalBar extends Tile {
 			this.ul.html(stuff);
 		} // if
 		else { 
-			this.li[this.li.length - 1].append(stuff);
+			this.ul.append(stuff);
 		} // else
 		this.li.push( new JQuery("#" + VerticalBar.NAME + VerticalBar.ID + "-li-" + k) );
 		
@@ -55,7 +59,7 @@ class VerticalBar extends Tile {
 			this.ul.html(stuff);
 		} // if
 		else { 
-			this.li[this.li.length - 1].append(stuff);
+			this.ul.append(stuff);
 		} // else
 		this.li.push( new JQuery("#" + VerticalBar.NAME + VerticalBar.ID + "-li-" + k) );
 		

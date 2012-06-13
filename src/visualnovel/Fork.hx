@@ -17,6 +17,10 @@ class Fork {
 	public function new() { 
 	} // new
 	
+	public function Text() { 
+		return text;
+	} // Text
+	
 	public function Load( scenedata : SceneData ) { 
 		this.text = scenedata.fork_text;
 		this.target_scene_id = scenedata.id;

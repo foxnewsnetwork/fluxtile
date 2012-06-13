@@ -336,7 +336,7 @@ tests.VisualNovelTest.main = function() {
 			var j = _g2++;
 			layers.push({ image : "madotsuki.png", width : 25.0, height : 25.0, x : tools.Random.Get(250) + 0.01, y : tools.Random.Get(250) + 0.01});
 		}
-		sd.push({ layers : layers, text : "Madotsuki scene number " + k, id : k, parent_id : null, children_id : [], fork_text : "madotsuki scene choice " + k, fork_image : null, fork_number : k % 2});
+		sd.push({ layers : layers, text : "Madotsuki scene number " + k, id : k, parent_id : null, children_id : [], fork_text : "madotsuki scene choice " + k, fork_image : null, fork_number : k < 25?0:1});
 	}
 	var _g = 0;
 	while(_g < 25) {
@@ -635,6 +635,9 @@ visualnovel.Fork.prototype.origin_scene_id = null;
 visualnovel.Fork.prototype.target_scene_id = null;
 visualnovel.Fork.prototype.text = null;
 visualnovel.Fork.prototype.choice_number = null;
+visualnovel.Fork.prototype.Text = function() {
+	return this.text;
+}
 visualnovel.Fork.prototype.Load = function(scenedata) {
 	this.text = scenedata.fork_text;
 	this.target_scene_id = scenedata.id;
@@ -778,6 +781,7 @@ visualnovel.VisualNovel.prototype.Start = function() {
 	this.past_history.push(this.active_scene);
 	this.Hide();
 	this.Show();
+	this.p_prepareforks();
 	this.loading.Hide();
 	return this.scenes.get(this.active_scene.Data() + "");
 }
@@ -833,6 +837,7 @@ visualnovel.VisualNovel.prototype.Fork = function(id) {
 	return scene;
 }
 visualnovel.VisualNovel.prototype.Next = function(choice) {
+	this.selector.Hide();
 	if(this.future_history.last() != null) {
 		this.scenes.get(this.shown_scene.Data() + "").Hide();
 		var back2future = this.future_history.pop();
@@ -850,13 +855,7 @@ visualnovel.VisualNovel.prototype.Next = function(choice) {
 		var scene = this.scenes.get(this.active_scene.Data() + "");
 		scene.Show();
 		this.past_history.push(this.active_scene);
-		var transitions = [];
-		var _g = 0, _g1 = this.active_scene.Children();
-		while(_g < _g1.length) {
-			var child = _g1[_g];
-			++_g;
-			transitions.push(this.forks.get(this.active_scene.Data() + "-" + child.Data()));
-		}
+		this.p_prepareforks();
 	}
 	var debug = "";
 	var $it0 = this.past_history.iterator();
@@ -864,37 +863,39 @@ visualnovel.VisualNovel.prototype.Next = function(choice) {
 		var k = $it0.next();
 		debug += k.Data() + ",";
 	}
-	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 238, className : "visualnovel.VisualNovel", methodName : "Next"});
+	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 237, className : "visualnovel.VisualNovel", methodName : "Next"});
 	debug = "";
 	var $it1 = this.future_history.iterator();
 	while( $it1.hasNext() ) {
 		var k = $it1.next();
 		debug += k.Data() + ",";
 	}
-	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 243, className : "visualnovel.VisualNovel", methodName : "Next"});
+	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 242, className : "visualnovel.VisualNovel", methodName : "Next"});
 	return;
 }
 visualnovel.VisualNovel.prototype.Previous = function() {
 	if(this.past_history.last() == this.past_history.first()) return null;
 	this.future_history.push(this.past_history.pop());
+	this.selector.Hide();
 	this.scenes.get(this.shown_scene.Data() + "").Hide();
 	this.shown_scene = this.past_history.first();
 	var scene = this.scenes.get(this.shown_scene.Data() + "");
 	scene.Show();
+	this.p_prepareforks();
 	var debug = "";
 	var $it0 = this.past_history.iterator();
 	while( $it0.hasNext() ) {
 		var k = $it0.next();
 		debug += k.Data() + ",";
 	}
-	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 268, className : "visualnovel.VisualNovel", methodName : "Previous"});
+	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 269, className : "visualnovel.VisualNovel", methodName : "Previous"});
 	debug = "";
 	var $it1 = this.future_history.iterator();
 	while( $it1.hasNext() ) {
 		var k = $it1.next();
 		debug += k.Data() + ",";
 	}
-	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 273, className : "visualnovel.VisualNovel", methodName : "Previous"});
+	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 274, className : "visualnovel.VisualNovel", methodName : "Previous"});
 	return;
 }
 visualnovel.VisualNovel.prototype.Hide = function(cb) {
@@ -921,6 +922,38 @@ visualnovel.VisualNovel.prototype.Show = function(cb) {
 		var u = $it0.next();
 		u.Show();
 	}
+}
+visualnovel.VisualNovel.prototype.p_prepareforks = function() {
+	var me = this;
+	var transitions = [];
+	var _g = 0, _g1 = this.active_scene.Children();
+	while(_g < _g1.length) {
+		var child = _g1[_g];
+		++_g;
+		transitions.push(this.forks.get(this.active_scene.Data() + "-" + child.Data()));
+	}
+	this.active_forks = transitions;
+	var _g = 0, _g1 = this.active_forks;
+	while(_g < _g1.length) {
+		var fork = _g1[_g];
+		++_g;
+		haxe.Log.trace(fork,{ fileName : "VisualNovel.hx", lineNumber : 337, className : "visualnovel.VisualNovel", methodName : "p_prepareforks"});
+	}
+	this.selector.Purge();
+	if(this.active_forks.length > 1 && this.shown_scene == this.active_scene) {
+		this.selector.Show();
+		var _g = 0, _g1 = this.active_forks;
+		while(_g < _g1.length) {
+			var fork = _g1[_g];
+			++_g;
+			this.selector.Text(fork.Text(),(function(f) {
+				return function() {
+					me.Next(f.Choice());
+				};
+			})(fork));
+		}
+		this.ui.get("next").Hide();
+	} else this.ui.get("next").Show();
 }
 visualnovel.VisualNovel.prototype.__class__ = visualnovel.VisualNovel;
 Std = function() { }
@@ -1274,6 +1307,9 @@ toolbar.VerticalBar.prototype.texts = null;
 toolbar.VerticalBar.prototype.images = null;
 toolbar.VerticalBar.prototype.ul = null;
 toolbar.VerticalBar.prototype.li = null;
+toolbar.VerticalBar.prototype.Purge = function() {
+	this.ul.html("");
+}
 toolbar.VerticalBar.prototype.Icon = function(image,cb) {
 	this.images.push(image);
 	var k = this.li.length;
@@ -1282,7 +1318,7 @@ toolbar.VerticalBar.prototype.Icon = function(image,cb) {
 	stuff += "<img src=\"" + image + "\" alt=\"vertical bar icon number " + k + "\" />";
 	stuff += "</button>";
 	stuff += "</li>";
-	if(k == 0) this.ul.html(stuff); else this.li[this.li.length - 1].append(stuff);
+	if(k == 0) this.ul.html(stuff); else this.ul.append(stuff);
 	this.li.push(new js.JQuery("#" + toolbar.VerticalBar.NAME + toolbar.VerticalBar.ID + "-li-" + k));
 	this.li[this.li.length - 1].click(function(e) {
 		if(cb != null) cb();
@@ -1296,7 +1332,7 @@ toolbar.VerticalBar.prototype.Text = function(text,cb) {
 	stuff += text;
 	stuff += "</button>";
 	stuff += "</li>";
-	if(k == 0) this.ul.html(stuff); else this.li[this.li.length - 1].append(stuff);
+	if(k == 0) this.ul.html(stuff); else this.ul.append(stuff);
 	this.li.push(new js.JQuery("#" + toolbar.VerticalBar.NAME + toolbar.VerticalBar.ID + "-li-" + k));
 	this.li[this.li.length - 1].click(function(e) {
 		if(cb != null) cb();

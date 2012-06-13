@@ -104,6 +104,7 @@ class VisualNovel extends Tile {
 		
 		// Step 3: Show everything again
 		this.Show(); 
+		this.p_prepareforks();
 			
 		// Step 4: Fish out the scene in question
 		this.loading.Hide();
@@ -190,6 +191,7 @@ class VisualNovel extends Tile {
 	
 	// Goes to the next scene ( defaults to first path )
 	public function Next( ?choice : Int ) : Void { 
+		this.selector.Hide();
 		// Step 0: History navigation
 		if ( this.future_history.last() != null ) { 
 			// Step a: Hide the current scene
@@ -224,11 +226,8 @@ class VisualNovel extends Tile {
 			scene.Show();
 			this.past_history.push( this.active_scene );
 			
-			// Step 4: Fetching the next forks
-			var transitions = [];
-			for( child in this.active_scene.Children() ) { 
-				transitions.push( this.forks.get( this.active_scene.Data() + "-" + child.Data() ) );
-			} // for
+			// Step 4: Prepare forks
+			this.p_prepareforks();
 		}  // else
 		
 		var debug = "";
@@ -253,12 +252,14 @@ class VisualNovel extends Tile {
 		
 		// Step 2: Managing history
 		this.future_history.push(this.past_history.pop());
+		this.selector.Hide();
 		
 		// Step 3: Going back
 		this.scenes.get( this.shown_scene.Data() + "" ).Hide();
 		this.shown_scene = this.past_history.first();
 		var scene = this.scenes.get( this.shown_scene.Data() + "" );
 		scene.Show();
+		this.p_prepareforks();
 		
 		// Step 4: Debug trace
 		var debug = "";
@@ -298,4 +299,40 @@ class VisualNovel extends Tile {
 			u.Show();
 		} // for
 	} // Show
+	
+	/****
+	* Private Operations Section
+	***/
+	// Loads the active_scene's choices and displays them
+	private function p_prepareforks() { 
+		// Step 1: Prepare the forks
+		var transitions = [];
+		for( child in this.active_scene.Children() ) { 
+			transitions.push( this.forks.get( this.active_scene.Data() + "-" + child.Data() ) );
+		} // for
+		this.active_forks = transitions;
+		
+		// Step * : Debugging and tracing
+		for( fork in this.active_forks) { 
+			trace(fork);
+		} // for
+		
+		// Step 2: Loading into the vbar
+		this.selector.Purge();
+		
+		if ( this.active_forks.length > 1 && this.shown_scene == this.active_scene ) { 
+			this.selector.Show();
+			for( fork in this.active_forks) { 
+				this.selector.Text(fork.Text(), (function(f : Fork) { 
+					return function() { 
+						this.Next(f.Choice());
+					}; // return
+				} )(fork)); // Text callback
+			} // for
+			this.ui.get("next").Hide();
+		} // if length < 2
+		else { 
+			this.ui.get("next").Show();
+		} // else
+	} // p_loadchoice
 } // VisualNovel

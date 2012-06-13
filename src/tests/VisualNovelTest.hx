@@ -27,7 +27,7 @@ class VisualNovelTest {
 				children_id : [] ,
 				fork_text : "madotsuki scene choice " + k ,
 				fork_image : null ,
-				fork_number : k % 2 ,
+				fork_number : k < 25 ? 0 : 1 ,
 			} ); // sd.push
 		} // for k
 		
