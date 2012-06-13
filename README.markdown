@@ -18,4 +18,8 @@ horizontal-bar-icon
 	icon0
 	icon1
 	...
-
+visualnovel-forkbox
+visual-novel-fork-icon
+	fork-img-#{parent_id}-#{id}
+visual-novel-fork-text
+	fork-txt-#{parent_id}-#{id}

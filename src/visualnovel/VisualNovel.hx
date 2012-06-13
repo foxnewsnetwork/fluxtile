@@ -1,24 +1,43 @@
 package visualnovel;
 import toolbar.HorizontalBar;
+import toolbar.VerticalBar;
 import buildingblocks.Tile;
 import controls.IconsControl;
 import controls.TextControl;
 import datastructures.Tree;
 import animation.Spotlight;
+import js.JQuery;
 
 class VisualNovel extends Tile {
 	/****
 	* Private member variables
 	***/
+	// Scene storage
 	private var scenes : Hash<Scene>; // all loaded scenes
-	private var scene_tree : TreeNode<Int>; // tree root 
-	private var active_scene : TreeNode<Int>; // Scene we're currently on
-	private var scene_history : Array<TreeNode<Int>>; // history of the scenes we've visited
+	private var scene_tree : TreeNode<Int>; // tree root
+	
+	
+	// choice storage
+	private var forks : Hash<Fork>; // all the forks for the scenes
+	private var active_forks : Array<Fork>; // the forks currently shown on a given scene
+	
+	// navigation logic
+	private var active_scene : TreeNode<Int>; // Furthest scene we have reached
+	private var shown_scene : TreeNode<Int>; // the scene that's actually shown
+	private var past_history : List<TreeNode<Int>>; // history of all the scenes we've visted
+	private var future_history : List<TreeNode<Int>>; // history of all the scenes we've revisited
+	
+	// UI
 	private var loading : Tile; // Now-Loading animation
 	private var tabs : HorizontalBar; // Control bar
+	private var selector : VerticalBar; // Choice making dialog
 	private var ui : Hash<Tile>; // buttons, clickers, etc.
-	private var permission : Hash<Int>; // permission levels
+	
+	// animation / highlights
 	private var spotlight : Spotlight; // used to highlight stuff
+	
+	// user permission management
+	private var permission : Hash<Int>; // permission levels
 	
 	/****
 	* Public methods
@@ -26,15 +45,15 @@ class VisualNovel extends Tile {
 	public function new() { 
 		// Step 1: New junk
 		super();
-		this.scenes = new Hash<Scene>();
 		this.tabs = new HorizontalBar();
 		this.ui = new Hash<Tile>();
 		this.permission = new Hash<Int>();
-		this.scene_history = [];
 		this.loading = new Tile();
 		this.spotlight = new Spotlight();
+		this.selector = new VerticalBar();
 		
 		// Step 2: Set UI
+		this.selector.ClassName("visualnovel-forkbox");
 		this.loading.Show();
 		this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
 		this.loading.ClassName("visualnovel-placeholder now-loading");
@@ -75,7 +94,10 @@ class VisualNovel extends Tile {
 	public function Start() : Scene { 
 		// Step 1: Navigate to the root scene
 		this.active_scene = this.scene_tree;
-		this.scene_history = [];
+		this.shown_scene = this.active_scene;
+		this.past_history = new List();
+		this.future_history = new List();
+		this.past_history.push(this.active_scene);
 		
 		// Step 2: Hide EVERYTHING
 		this.Hide();
@@ -84,8 +106,8 @@ class VisualNovel extends Tile {
 		this.Show(); 
 			
 		// Step 4: Fish out the scene in question
-		return this.scenes.get(this.active_scene.Data() + "");
 		this.loading.Hide();
+		return this.scenes.get(this.active_scene.Data() + "");
 	} // Start
 	
 	public function Load( data : Array<SceneData> ): Void { 
@@ -113,9 +135,15 @@ class VisualNovel extends Tile {
 				this.scene_tree = Tree.Create(data[k].id);
 			} // if
 		} // for k
-		
-		// Step 1.5: Tracing a bit
 		this.active_scene = this.scene_tree;
+		
+		// Step 1.5: Loading forks
+		this.forks = new Hash<Fork>();
+		for( k in 0...data.length) { 
+			var happycat = new Fork();
+			happycat.Load(data[k]); // fork.load
+			this.forks.set(happycat.GetHash(), happycat);
+		} // for
 		
 		// Step 2: Error-handling
 		if ( this.scene_tree == null ) { 
@@ -149,41 +177,101 @@ class VisualNovel extends Tile {
 			text : "",
 			id : id ,
 			parent_id : this.active_scene.Data() ,
-			children_id : []
+			children_id : [] ,
+			fork_text : null ,
+			fork_image : null ,
+			fork_number : 0
 		}; // scenedata
 		this.active_scene.Branch(id);
 		scene.Load(scenedata);
 		this.scenes.set(id + "", scene);
 		return scene;
-	} // NewScene
+	} // Fork
 	
 	// Goes to the next scene ( defaults to first path )
-	public function Next( ?choice : Int ) : Scene { 
-		if ( this.active_scene.Children().length < 1 ) { 
-			return null;
+	public function Next( ?choice : Int ) : Void { 
+		// Step 0: History navigation
+		if ( this.future_history.last() != null ) { 
+			// Step a: Hide the current scene
+			this.scenes.get(this.shown_scene.Data() + "").Hide();
+			
+			// Step b: Find the scene from history
+			var back2future = this.future_history.pop();
+			this.past_history.push(back2future);
+			var scene = this.scenes.get(back2future.Data() + "");
+			this.shown_scene = back2future;
+			
+			// Step c: Show the history scene
+			scene.Show();
 		} // if
-		var selection = 0;
-		if ( choice != null ) { 
-			selection = choice;
-		} // if
-		this.scene_history.push( this.active_scene );
-		this.scenes.get( this.active_scene.Data() + "" ).Hide();
-		this.active_scene = this.active_scene.Children()[selection];
-		var scene = this.scenes.get(this.active_scene.Data() + "");
-		scene.Show();
-		return scene;
+		else { 
+			// Step 1: Null checking
+			if ( this.active_scene.Children().length < 1 ) { 
+				return null; // End of chapter; should go to new chapter
+			} // if
+			
+			// Step 2: Setting up the selection
+			var selection = 0;
+			if ( choice != null ) { 
+				selection = choice;
+			} // if
+			
+			// Step 3: Fetching the next scene
+			this.scenes.get( this.active_scene.Data() + "" ).Hide();
+			this.active_scene = this.active_scene.Children()[selection];
+			this.shown_scene = this.active_scene;
+			var scene = this.scenes.get(this.active_scene.Data() + "");
+			scene.Show();
+			this.past_history.push( this.active_scene );
+			
+			// Step 4: Fetching the next forks
+			var transitions = [];
+			for( child in this.active_scene.Children() ) { 
+				transitions.push( this.forks.get( this.active_scene.Data() + "-" + child.Data() ) );
+			} // for
+		}  // else
+		
+		var debug = "";
+		for( k in this.past_history ) { 
+			debug += k.Data() + ",";
+		} // for
+		trace("this.past_history: " + debug );
+		debug = "";
+		for( k in this.future_history ) { 
+			debug += k.Data() + ",";
+		} // for
+		trace("this.future_history: " + debug );
+		return;
 	} // Next
 	
 	// Goes to the previous scene (no choices here)
-	public function Previous() : Scene {
-		if ( this.scene_history.length < 1 ) { 
+	public function Previous() : Void {	
+		// Step 1: Null check
+		if ( this.past_history.last() == this.past_history.first() ) { 
 			return null;
 		} // if
-		this.scenes.get( this.active_scene.Data() + "" ).Hide(); 
-		this.active_scene = this.scene_history.pop();
-		var scene = this.scenes.get( this.active_scene.Data() + "" );
+		
+		// Step 2: Managing history
+		this.future_history.push(this.past_history.pop());
+		
+		// Step 3: Going back
+		this.scenes.get( this.shown_scene.Data() + "" ).Hide();
+		this.shown_scene = this.past_history.first();
+		var scene = this.scenes.get( this.shown_scene.Data() + "" );
 		scene.Show();
-		return scene;
+		
+		// Step 4: Debug trace
+		var debug = "";
+		for( k in this.past_history ) { 
+			debug += k.Data() + ",";
+		} // for
+		trace("this.past_history: " + debug );
+		debug = "";
+		for( k in this.future_history ) { 
+			debug += k.Data() + ",";
+		} // for
+		trace("this.future_history: " + debug );
+		return;
 	} // Previous
 	
 	/****
@@ -204,7 +292,7 @@ class VisualNovel extends Tile {
 	
 	public override function Show( ?cb : Void -> Void ) { 
 		super.Show(cb);
-		this.scenes.get( this.active_scene.Data() + "" ).Show();
+		this.scenes.get( this.shown_scene.Data() + "" ).Show();
 		this.tabs.Show();
 		for( u in this.ui ) { 
 			u.Show();

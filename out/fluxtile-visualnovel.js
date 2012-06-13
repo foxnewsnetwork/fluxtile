@@ -336,7 +336,7 @@ tests.VisualNovelTest.main = function() {
 			var j = _g2++;
 			layers.push({ image : "madotsuki.png", width : 25.0, height : 25.0, x : tools.Random.Get(250) + 0.01, y : tools.Random.Get(250) + 0.01});
 		}
-		sd.push({ layers : layers, text : "Madotsuki scene number " + k, id : k, parent_id : null, children_id : []});
+		sd.push({ layers : layers, text : "Madotsuki scene number " + k, id : k, parent_id : null, children_id : [], fork_text : "madotsuki scene choice " + k, fork_image : null, fork_number : k % 2});
 	}
 	var _g = 0;
 	while(_g < 25) {
@@ -628,6 +628,26 @@ tools.Timer.Stop = function() {
 }
 tools.Timer.prototype.__class__ = tools.Timer;
 if(typeof visualnovel=='undefined') visualnovel = {}
+visualnovel.Fork = function(p) {
+}
+visualnovel.Fork.__name__ = ["visualnovel","Fork"];
+visualnovel.Fork.prototype.origin_scene_id = null;
+visualnovel.Fork.prototype.target_scene_id = null;
+visualnovel.Fork.prototype.text = null;
+visualnovel.Fork.prototype.choice_number = null;
+visualnovel.Fork.prototype.Load = function(scenedata) {
+	this.text = scenedata.fork_text;
+	this.target_scene_id = scenedata.id;
+	this.origin_scene_id = scenedata.parent_id;
+	this.choice_number = scenedata.fork_number;
+}
+visualnovel.Fork.prototype.GetHash = function() {
+	return this.origin_scene_id + "-" + this.target_scene_id;
+}
+visualnovel.Fork.prototype.Choice = function() {
+	return this.choice_number;
+}
+visualnovel.Fork.prototype.__class__ = visualnovel.Fork;
 visualnovel.Scene = function(p) {
 	if( p === $_ ) return;
 	buildingblocks.Tile.call(this);
@@ -692,13 +712,13 @@ visualnovel.VisualNovel = function(p) {
 	if( p === $_ ) return;
 	var me = this;
 	buildingblocks.Tile.call(this);
-	this.scenes = new Hash();
 	this.tabs = new toolbar.HorizontalBar();
 	this.ui = new Hash();
 	this.permission = new Hash();
-	this.scene_history = [];
 	this.loading = new buildingblocks.Tile();
 	this.spotlight = new animation.Spotlight();
+	this.selector = new toolbar.VerticalBar();
+	this.selector.ClassName("visualnovel-forkbox");
 	this.loading.Show();
 	this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
 	this.loading.ClassName("visualnovel-placeholder now-loading");
@@ -738,20 +758,28 @@ visualnovel.VisualNovel.__super__ = buildingblocks.Tile;
 for(var k in buildingblocks.Tile.prototype ) visualnovel.VisualNovel.prototype[k] = buildingblocks.Tile.prototype[k];
 visualnovel.VisualNovel.prototype.scenes = null;
 visualnovel.VisualNovel.prototype.scene_tree = null;
+visualnovel.VisualNovel.prototype.forks = null;
+visualnovel.VisualNovel.prototype.active_forks = null;
 visualnovel.VisualNovel.prototype.active_scene = null;
-visualnovel.VisualNovel.prototype.scene_history = null;
+visualnovel.VisualNovel.prototype.shown_scene = null;
+visualnovel.VisualNovel.prototype.past_history = null;
+visualnovel.VisualNovel.prototype.future_history = null;
 visualnovel.VisualNovel.prototype.loading = null;
 visualnovel.VisualNovel.prototype.tabs = null;
+visualnovel.VisualNovel.prototype.selector = null;
 visualnovel.VisualNovel.prototype.ui = null;
-visualnovel.VisualNovel.prototype.permission = null;
 visualnovel.VisualNovel.prototype.spotlight = null;
+visualnovel.VisualNovel.prototype.permission = null;
 visualnovel.VisualNovel.prototype.Start = function() {
 	this.active_scene = this.scene_tree;
-	this.scene_history = [];
+	this.shown_scene = this.active_scene;
+	this.past_history = new List();
+	this.future_history = new List();
+	this.past_history.push(this.active_scene);
 	this.Hide();
 	this.Show();
-	return this.scenes.get(this.active_scene.Data() + "");
 	this.loading.Hide();
+	return this.scenes.get(this.active_scene.Data() + "");
 }
 visualnovel.VisualNovel.prototype.Load = function(data) {
 	var lambda_FindChildren = function(t) {
@@ -775,6 +803,14 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		if(data[k].parent_id == null) this.scene_tree = datastructures.Tree.Create(data[k].id);
 	}
 	this.active_scene = this.scene_tree;
+	this.forks = new Hash();
+	var _g1 = 0, _g = data.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		var happycat = new visualnovel.Fork();
+		happycat.Load(data[k]);
+		this.forks.set(happycat.GetHash(),happycat);
+	}
 	if(this.scene_tree == null) throw "Bad scene data - attempted cirrcular tree depedence. Seriously, please don't write trees that are their own parents";
 	var leafs = lambda_FindChildren(this.scene_tree);
 	var children = [];
@@ -790,30 +826,76 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 }
 visualnovel.VisualNovel.prototype.Fork = function(id) {
 	var scene = new visualnovel.Scene();
-	var scenedata = { layers : [], text : "", id : id, parent_id : this.active_scene.Data(), children_id : []};
+	var scenedata = { layers : [], text : "", id : id, parent_id : this.active_scene.Data(), children_id : [], fork_text : null, fork_image : null, fork_number : 0};
 	this.active_scene.Branch(id);
 	scene.Load(scenedata);
 	this.scenes.set(id + "",scene);
 	return scene;
 }
 visualnovel.VisualNovel.prototype.Next = function(choice) {
-	if(this.active_scene.Children().length < 1) return null;
-	var selection = 0;
-	if(choice != null) selection = choice;
-	this.scene_history.push(this.active_scene);
-	this.scenes.get(this.active_scene.Data() + "").Hide();
-	this.active_scene = this.active_scene.Children()[selection];
-	var scene = this.scenes.get(this.active_scene.Data() + "");
-	scene.Show();
-	return scene;
+	if(this.future_history.last() != null) {
+		this.scenes.get(this.shown_scene.Data() + "").Hide();
+		var back2future = this.future_history.pop();
+		this.past_history.push(back2future);
+		var scene = this.scenes.get(back2future.Data() + "");
+		this.shown_scene = back2future;
+		scene.Show();
+	} else {
+		if(this.active_scene.Children().length < 1) return null;
+		var selection = 0;
+		if(choice != null) selection = choice;
+		this.scenes.get(this.active_scene.Data() + "").Hide();
+		this.active_scene = this.active_scene.Children()[selection];
+		this.shown_scene = this.active_scene;
+		var scene = this.scenes.get(this.active_scene.Data() + "");
+		scene.Show();
+		this.past_history.push(this.active_scene);
+		var transitions = [];
+		var _g = 0, _g1 = this.active_scene.Children();
+		while(_g < _g1.length) {
+			var child = _g1[_g];
+			++_g;
+			transitions.push(this.forks.get(this.active_scene.Data() + "-" + child.Data()));
+		}
+	}
+	var debug = "";
+	var $it0 = this.past_history.iterator();
+	while( $it0.hasNext() ) {
+		var k = $it0.next();
+		debug += k.Data() + ",";
+	}
+	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 238, className : "visualnovel.VisualNovel", methodName : "Next"});
+	debug = "";
+	var $it1 = this.future_history.iterator();
+	while( $it1.hasNext() ) {
+		var k = $it1.next();
+		debug += k.Data() + ",";
+	}
+	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 243, className : "visualnovel.VisualNovel", methodName : "Next"});
+	return;
 }
 visualnovel.VisualNovel.prototype.Previous = function() {
-	if(this.scene_history.length < 1) return null;
-	this.scenes.get(this.active_scene.Data() + "").Hide();
-	this.active_scene = this.scene_history.pop();
-	var scene = this.scenes.get(this.active_scene.Data() + "");
+	if(this.past_history.last() == this.past_history.first()) return null;
+	this.future_history.push(this.past_history.pop());
+	this.scenes.get(this.shown_scene.Data() + "").Hide();
+	this.shown_scene = this.past_history.first();
+	var scene = this.scenes.get(this.shown_scene.Data() + "");
 	scene.Show();
-	return scene;
+	var debug = "";
+	var $it0 = this.past_history.iterator();
+	while( $it0.hasNext() ) {
+		var k = $it0.next();
+		debug += k.Data() + ",";
+	}
+	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 268, className : "visualnovel.VisualNovel", methodName : "Previous"});
+	debug = "";
+	var $it1 = this.future_history.iterator();
+	while( $it1.hasNext() ) {
+		var k = $it1.next();
+		debug += k.Data() + ",";
+	}
+	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 273, className : "visualnovel.VisualNovel", methodName : "Previous"});
+	return;
 }
 visualnovel.VisualNovel.prototype.Hide = function(cb) {
 	buildingblocks.Tile.prototype.Hide.call(this,cb);
@@ -832,7 +914,7 @@ visualnovel.VisualNovel.prototype.Hide = function(cb) {
 }
 visualnovel.VisualNovel.prototype.Show = function(cb) {
 	buildingblocks.Tile.prototype.Show.call(this,cb);
-	this.scenes.get(this.active_scene.Data() + "").Show();
+	this.scenes.get(this.shown_scene.Data() + "").Show();
 	this.tabs.Show();
 	var $it0 = this.ui.iterator();
 	while( $it0.hasNext() ) {
@@ -866,6 +948,118 @@ Std.random = function(x) {
 	return Math.floor(Math.random() * x);
 }
 Std.prototype.__class__ = Std;
+List = function(p) {
+	if( p === $_ ) return;
+	this.length = 0;
+}
+List.__name__ = ["List"];
+List.prototype.h = null;
+List.prototype.q = null;
+List.prototype.length = null;
+List.prototype.add = function(item) {
+	var x = [item];
+	if(this.h == null) this.h = x; else this.q[1] = x;
+	this.q = x;
+	this.length++;
+}
+List.prototype.push = function(item) {
+	var x = [item,this.h];
+	this.h = x;
+	if(this.q == null) this.q = x;
+	this.length++;
+}
+List.prototype.first = function() {
+	return this.h == null?null:this.h[0];
+}
+List.prototype.last = function() {
+	return this.q == null?null:this.q[0];
+}
+List.prototype.pop = function() {
+	if(this.h == null) return null;
+	var x = this.h[0];
+	this.h = this.h[1];
+	if(this.h == null) this.q = null;
+	this.length--;
+	return x;
+}
+List.prototype.isEmpty = function() {
+	return this.h == null;
+}
+List.prototype.clear = function() {
+	this.h = null;
+	this.q = null;
+	this.length = 0;
+}
+List.prototype.remove = function(v) {
+	var prev = null;
+	var l = this.h;
+	while(l != null) {
+		if(l[0] == v) {
+			if(prev == null) this.h = l[1]; else prev[1] = l[1];
+			if(this.q == l) this.q = prev;
+			this.length--;
+			return true;
+		}
+		prev = l;
+		l = l[1];
+	}
+	return false;
+}
+List.prototype.iterator = function() {
+	return { h : this.h, hasNext : function() {
+		return this.h != null;
+	}, next : function() {
+		if(this.h == null) return null;
+		var x = this.h[0];
+		this.h = this.h[1];
+		return x;
+	}};
+}
+List.prototype.toString = function() {
+	var s = new StringBuf();
+	var first = true;
+	var l = this.h;
+	s.b[s.b.length] = "{" == null?"null":"{";
+	while(l != null) {
+		if(first) first = false; else s.b[s.b.length] = ", " == null?"null":", ";
+		s.add(Std.string(l[0]));
+		l = l[1];
+	}
+	s.b[s.b.length] = "}" == null?"null":"}";
+	return s.b.join("");
+}
+List.prototype.join = function(sep) {
+	var s = new StringBuf();
+	var first = true;
+	var l = this.h;
+	while(l != null) {
+		if(first) first = false; else s.b[s.b.length] = sep == null?"null":sep;
+		s.add(l[0]);
+		l = l[1];
+	}
+	return s.b.join("");
+}
+List.prototype.filter = function(f) {
+	var l2 = new List();
+	var l = this.h;
+	while(l != null) {
+		var v = l[0];
+		l = l[1];
+		if(f(v)) l2.add(v);
+	}
+	return l2;
+}
+List.prototype.map = function(f) {
+	var b = new List();
+	var l = this.h;
+	while(l != null) {
+		var v = l[0];
+		l = l[1];
+		b.add(f(v));
+	}
+	return b;
+}
+List.prototype.__class__ = List;
 if(typeof js=='undefined') js = {}
 js.Lib = function() { }
 js.Lib.__name__ = ["js","Lib"];
@@ -1064,6 +1258,51 @@ js.Boot.__init = function() {
 	$closure = js.Boot.__closure;
 }
 js.Boot.prototype.__class__ = js.Boot;
+toolbar.VerticalBar = function(p) {
+	if( p === $_ ) return;
+	buildingblocks.Tile.call(this);
+	toolbar.VerticalBar.ID += 1;
+	this.texts = [];
+	this.HTML("<ul class=\"vertical-bar\" id=\"" + toolbar.VerticalBar.NAME + toolbar.VerticalBar.ID + "\"></ul>");
+	this.ul = new js.JQuery("#" + toolbar.VerticalBar.NAME + toolbar.VerticalBar.ID);
+	this.li = [];
+}
+toolbar.VerticalBar.__name__ = ["toolbar","VerticalBar"];
+toolbar.VerticalBar.__super__ = buildingblocks.Tile;
+for(var k in buildingblocks.Tile.prototype ) toolbar.VerticalBar.prototype[k] = buildingblocks.Tile.prototype[k];
+toolbar.VerticalBar.prototype.texts = null;
+toolbar.VerticalBar.prototype.images = null;
+toolbar.VerticalBar.prototype.ul = null;
+toolbar.VerticalBar.prototype.li = null;
+toolbar.VerticalBar.prototype.Icon = function(image,cb) {
+	this.images.push(image);
+	var k = this.li.length;
+	var stuff = "<li class=\"vertical-bar vertical-bar-li-" + k + "\" id='" + toolbar.VerticalBar.NAME + toolbar.VerticalBar.ID + "-li-" + k + "'>";
+	stuff += "<button class=\"vertical-bar-btn vbar-btn-" + k + "\" id=\"vertical-bar-btn-" + k + "\">";
+	stuff += "<img src=\"" + image + "\" alt=\"vertical bar icon number " + k + "\" />";
+	stuff += "</button>";
+	stuff += "</li>";
+	if(k == 0) this.ul.html(stuff); else this.li[this.li.length - 1].append(stuff);
+	this.li.push(new js.JQuery("#" + toolbar.VerticalBar.NAME + toolbar.VerticalBar.ID + "-li-" + k));
+	this.li[this.li.length - 1].click(function(e) {
+		if(cb != null) cb();
+	});
+}
+toolbar.VerticalBar.prototype.Text = function(text,cb) {
+	this.texts.push(text);
+	var k = this.li.length;
+	var stuff = "<li class=\"vertical-bar vertical-bar-li-" + k + "\" id='" + toolbar.VerticalBar.NAME + toolbar.VerticalBar.ID + "-li-" + k + "'>";
+	stuff += "<button class=\"vertical-bar-btn vbar-btn-" + k + "\" id=\"vertical-bar-btn-" + k + "\">";
+	stuff += text;
+	stuff += "</button>";
+	stuff += "</li>";
+	if(k == 0) this.ul.html(stuff); else this.li[this.li.length - 1].append(stuff);
+	this.li.push(new js.JQuery("#" + toolbar.VerticalBar.NAME + toolbar.VerticalBar.ID + "-li-" + k));
+	this.li[this.li.length - 1].click(function(e) {
+		if(cb != null) cb();
+	});
+}
+toolbar.VerticalBar.prototype.__class__ = toolbar.VerticalBar;
 controls.IconsControl = function(p) {
 	if( p === $_ ) return;
 	var me = this;
@@ -1376,6 +1615,8 @@ buildingblocks.Element.NAME = "FFOpenVN-Tile-Element-" + Math.floor(10000 * Math
 buildingblocks.Element.TestCounter = 0;
 tools.Timer.TIME = haxe.Timer.stamp();
 js.Lib.onerror = null;
+toolbar.VerticalBar.NAME = "FFOpenVN-Vertical-Bar-" + tools.Random.Get(10000);
+toolbar.VerticalBar.ID = 0;
 controls.IconsControl.IconsPerLine = 5;
 controls.IconsControl.IconsPerPage = 10;
 tests.VisualNovelTest.main()

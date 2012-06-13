@@ -24,7 +24,10 @@ class VisualNovelTest {
 				text : "Madotsuki scene number " + k ,
 				id : k ,
 				parent_id : null ,
-				children_id : []
+				children_id : [] ,
+				fork_text : "madotsuki scene choice " + k ,
+				fork_image : null ,
+				fork_number : k % 2 ,
 			} ); // sd.push
 		} // for k
 		
