@@ -4,8 +4,10 @@ import toolbar.VerticalBar;
 import buildingblocks.Tile;
 import controls.IconsControl;
 import controls.TextControl;
+import controls.InputControl;
 import datastructures.Tree;
 import animation.Spotlight;
+
 import js.JQuery;
 
 class VisualNovel extends Tile {
@@ -15,7 +17,6 @@ class VisualNovel extends Tile {
 	// Scene storage
 	private var scenes : Hash<Scene>; // all loaded scenes
 	private var scene_tree : TreeNode<Int>; // tree root
-	
 	
 	// choice storage
 	private var forks : Hash<Fork>; // all the forks for the scenes
@@ -39,57 +40,12 @@ class VisualNovel extends Tile {
 	// user permission management
 	private var permission : Hash<Int>; // permission levels
 	
-	/****
-	* Public methods
-	***/
-	public function new() { 
-		// Step 1: New junk
-		super();
-		this.tabs = new HorizontalBar();
-		this.ui = new Hash<Tile>();
-		this.permission = new Hash<Int>();
-		this.loading = new Tile();
-		this.spotlight = new Spotlight();
-		this.selector = new VerticalBar();
-		
-		// Step 2: Set UI
-		this.selector.ClassName("visualnovel-forkbox");
-		this.loading.Show();
-		this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
-		this.loading.ClassName("visualnovel-placeholder now-loading");
-		this.tabs.ClassName("visualnovel-ui tabs-holder");
-		var btn = new Tile();
-		btn.ClassName("visualnovel-ui btn-next");
-		btn.Click(function(e){
-			this.Next();
-		}); // Click
-		btn.Mouseover(function(e){ 
-			this.spotlight.On(btn.Size(), btn.Position());
-		} );
-		btn.Mouseleave(function(e){ 
-			this.spotlight.Off();
-		});
-		this.ui.set("next", btn );
-		
-		var btn2 = new Tile();
-		btn2.ClassName("visualnovel-ui btn-previous");
-		btn2.Click(function(e){
-			this.Previous();
-		}); // Click
-		btn2.Mouseover(function(e){ 
-			this.spotlight.On(btn2.Size(), btn2.Position());
-		} );
-		btn2.Mouseleave(function(e){ 
-			this.spotlight.Off();
-		});
-		this.ui.set("previous", btn2 );
-		
-		// Step 3: Set styles
-		for( u in this.ui ) { 
-			u.Hide();
-		} // for
-	} // new
+	// External callback interface
+	private var fork_callto : (Int -> Void) -> Void; // (Int, Int -> Void) -> Void 
 	
+	/****
+	* Public Setup (YOU MUST CALL ALL OF THEM!)
+	***/
 	// Starts off the visual novel at the root scene
 	public function Start() : Scene { 
 		// Step 1: Navigate to the root scene
@@ -166,27 +122,59 @@ class VisualNovel extends Tile {
 
 	} // Load
 	
+	public function SetupForking( cb ){ 
+		this.fork_callto = cb;
+	} // SetupForking
+	 
+	/****
+	* Public methods
+	***/
+	public function new() { 
+		// Step 1: New junk
+		super();
+		this.tabs = new HorizontalBar();
+		this.ui = new Hash<Tile>();
+		this.permission = new Hash<Int>();
+		this.loading = new Tile();
+		this.spotlight = new Spotlight();
+		this.selector = new VerticalBar();
+		
+		// Step 2: Set UI
+		this.selector.ClassName("visualnovel-forkbox");
+		this.loading.Show();
+		this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
+		this.loading.ClassName("visualnovel-placeholder now-loading");
+		this.tabs.ClassName("visualnovel-ui tabs-holder");
+		
+		// Step 3: Setup clickables
+		this.p_setupui();
+	} // new
+	
 	// Creates a new scene and attaches it wherever we are
 	//                                / - (s4 a)        
 	// (s1) - (s2) - (s3) (forked here) - (s4) - (s5) (forked here) - (s6)
 	//                                                           \ - (s6 a)
 	// New scenes should only be initialized when we get an ID from the server
-	public function Fork(id : Int) : Scene { 
-		var scene = new Scene();
-		var scenedata = { 
-			layers : [],
-			text : "",
-			id : id ,
-			parent_id : this.active_scene.Data() ,
-			children_id : [] ,
-			fork_text : null ,
-			fork_image : null ,
-			fork_number : 0
-		}; // scenedata
-		this.active_scene.Branch(id);
-		scene.Load(scenedata);
-		this.scenes.set(id + "", scene);
-		return scene;
+	// Notice that this method is in parallel!
+	public function Fork(text : String, cb : Scene -> Void ) : Void {
+		this.fork_callto( function( id : Int ) { 
+			var scene = new Scene();
+			var scenedata = { 
+				layers : [],
+				text : "",
+				id : id ,
+				parent_id : this.active_scene.Data() ,
+				children_id : [] ,
+				fork_text : text ,
+				fork_image : null ,
+				fork_number : this.active_scene.Children().length
+			}; // scenedata
+			this.active_scene.Branch(id);
+			scene.Load(scenedata);
+			this.scenes.set(id + "", scene);
+			this.Next(this.active_scene.Children().length - 1);
+			cb(scene);
+		} ); // fork_callto callback 
 	} // Fork
 	
 	// Goes to the next scene ( defaults to first path )
@@ -222,6 +210,7 @@ class VisualNovel extends Tile {
 			this.scenes.get( this.active_scene.Data() + "" ).Hide();
 			this.active_scene = this.active_scene.Children()[selection];
 			this.shown_scene = this.active_scene;
+			trace( this.active_scene );
 			var scene = this.scenes.get(this.active_scene.Data() + "");
 			scene.Show();
 			this.past_history.push( this.active_scene );
@@ -335,4 +324,43 @@ class VisualNovel extends Tile {
 			this.ui.get("next").Show();
 		} // else
 	} // p_loadchoice
+	
+	private function p_setupui() { 
+		// Step 0: Standard setup
+		for( k in ['next', 'previous', 'fork'] ) { 
+			var btn = new Tile();
+			btn.ClassName("visualnovel-ui btn-" + k);
+			btn.Mouseover(function(e){ 
+				this.spotlight.On(btn.Size(), btn.Position());
+			} );
+			btn.Mouseleave(function(e){ 
+				this.spotlight.Off();
+			});
+			this.ui.set( k , btn );
+		} // for
+		
+		// Step 1: Next btn
+		this.ui.get("next").Click(function(e){
+			this.Next();
+		}); // Click
+		
+		// Step 2: prev btn
+		this.ui.get("previous").Click(function(e){
+			this.Previous();
+		}); // Click
+		
+		// Step 3: fork btn
+		this.ui.get("fork").Click(function(e){ 
+			InputControl.Input(function(userinput){
+				this.Fork(userinput, function(scene) { 
+					return;
+				} ); // Fork callback 
+			}); // Input callback
+		} ); // Click
+		
+		// Step 3: Set styles
+		for( u in this.ui ) { 
+			u.Hide();
+		} // for
+	} // p_setupui
 } // VisualNovel

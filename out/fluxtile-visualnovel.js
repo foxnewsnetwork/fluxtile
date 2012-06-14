@@ -1,57 +1,4 @@
 $estr = function() { return js.Boot.__string_rec(this,''); }
-if(typeof datastructures=='undefined') datastructures = {}
-datastructures.Tree = function() { }
-datastructures.Tree.__name__ = ["datastructures","Tree"];
-datastructures.Tree.Create = function(data) {
-	var root = datastructures.TreeNode.Plant(data);
-	return root;
-}
-datastructures.Tree.prototype.__class__ = datastructures.Tree;
-datastructures.TreeNode = function(p) {
-	if( p === $_ ) return;
-	this.children = [];
-	this.isroot = false;
-}
-datastructures.TreeNode.__name__ = ["datastructures","TreeNode"];
-datastructures.TreeNode.Plant = function(seed) {
-	var root = new datastructures.TreeNode();
-	root.children = [];
-	root.data = seed;
-	root.isroot = true;
-	return root;
-}
-datastructures.TreeNode.prototype.children = null;
-datastructures.TreeNode.prototype.data = null;
-datastructures.TreeNode.prototype.isroot = null;
-datastructures.TreeNode.prototype.Print = function() {
-	var output = "{ data => " + this.data + "} has Children ->";
-	var _g1 = 0, _g = this.Children().length;
-	while(_g1 < _g) {
-		var k = _g1++;
-		output += this.Children()[k].Print();
-	}
-	return output;
-}
-datastructures.TreeNode.prototype.Branch = function(data) {
-	var child = new datastructures.TreeNode();
-	child.data = data;
-	this.children.push(child);
-	return child;
-}
-datastructures.TreeNode.prototype.Children = function() {
-	return this.children;
-}
-datastructures.TreeNode.prototype.Data = function(d) {
-	if(d != null) this.data = d;
-	return this.data;
-}
-datastructures.TreeNode.prototype.IsRoot = function() {
-	return this.isroot;
-}
-datastructures.TreeNode.prototype.IsLeaf = function() {
-	if(this.children.length == 0) return true; else return false;
-}
-datastructures.TreeNode.prototype.__class__ = datastructures.TreeNode;
 if(typeof buildingblocks=='undefined') buildingblocks = {}
 buildingblocks.Element = function(p) {
 	if( p === $_ ) return;
@@ -311,6 +258,92 @@ buildingblocks.Tile.prototype.p_NormalMode = function() {
 }
 buildingblocks.Tile.prototype.__class__ = buildingblocks.Tile;
 buildingblocks.Tile.__interfaces__ = [statistics.Statistics];
+if(typeof tools=='undefined') tools = {}
+tools.Random = function() { }
+tools.Random.__name__ = ["tools","Random"];
+tools.Random.Get = function(upper_cap) {
+	var cap = 100;
+	if(upper_cap != null) cap = upper_cap;
+	return Math.floor(Math.random() * cap);
+}
+tools.Random.prototype.__class__ = tools.Random;
+if(typeof controls=='undefined') controls = {}
+controls.InputControl = function(p) {
+	if( p === $_ ) return;
+	buildingblocks.Tile.call(this);
+}
+controls.InputControl.__name__ = ["controls","InputControl"];
+controls.InputControl.__super__ = buildingblocks.Tile;
+for(var k in buildingblocks.Tile.prototype ) controls.InputControl.prototype[k] = buildingblocks.Tile.prototype[k];
+controls.InputControl.Input = function(cb,placeholder) {
+	var container = new buildingblocks.Tile();
+	container.ClassName("static-input-container");
+	var i = "<input type=\"text\" id=\"" + controls.InputControl.NAME + controls.InputControl.ID + "-input\" class=\"static-input-control\" placeholder='" + placeholder + "'/>";
+	var s = "<input type=\"submit\" value=\"submit\" id=\"" + controls.InputControl.NAME + controls.InputControl.ID + "-submit\" class=\"static-input-button\" />";
+	container.HTML(s + i);
+	var i_jq = new js.JQuery("#" + controls.InputControl.NAME + controls.InputControl.ID + "-input");
+	var s_jq = new js.JQuery("#" + controls.InputControl.NAME + controls.InputControl.ID + "-submit");
+	s_jq.click(function(e) {
+		cb(i_jq.val());
+		container.Hide();
+		container.HTML("");
+		container.Remove();
+	});
+}
+controls.InputControl.prototype.__class__ = controls.InputControl;
+if(typeof datastructures=='undefined') datastructures = {}
+datastructures.Tree = function() { }
+datastructures.Tree.__name__ = ["datastructures","Tree"];
+datastructures.Tree.Create = function(data) {
+	var root = datastructures.TreeNode.Plant(data);
+	return root;
+}
+datastructures.Tree.prototype.__class__ = datastructures.Tree;
+datastructures.TreeNode = function(p) {
+	if( p === $_ ) return;
+	this.children = [];
+	this.isroot = false;
+}
+datastructures.TreeNode.__name__ = ["datastructures","TreeNode"];
+datastructures.TreeNode.Plant = function(seed) {
+	var root = new datastructures.TreeNode();
+	root.children = [];
+	root.data = seed;
+	root.isroot = true;
+	return root;
+}
+datastructures.TreeNode.prototype.children = null;
+datastructures.TreeNode.prototype.data = null;
+datastructures.TreeNode.prototype.isroot = null;
+datastructures.TreeNode.prototype.Print = function() {
+	var output = "{ data => " + this.data + "} has Children ->";
+	var _g1 = 0, _g = this.Children().length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		output += this.Children()[k].Print();
+	}
+	return output;
+}
+datastructures.TreeNode.prototype.Branch = function(data) {
+	var child = new datastructures.TreeNode();
+	child.data = data;
+	this.children.push(child);
+	return child;
+}
+datastructures.TreeNode.prototype.Children = function() {
+	return this.children;
+}
+datastructures.TreeNode.prototype.Data = function(d) {
+	if(d != null) this.data = d;
+	return this.data;
+}
+datastructures.TreeNode.prototype.IsRoot = function() {
+	return this.isroot;
+}
+datastructures.TreeNode.prototype.IsLeaf = function() {
+	if(this.children.length == 0) return true; else return false;
+}
+datastructures.TreeNode.prototype.__class__ = datastructures.TreeNode;
 if(typeof haxe=='undefined') haxe = {}
 haxe.Log = function() { }
 haxe.Log.__name__ = ["haxe","Log"];
@@ -351,6 +384,11 @@ tests.VisualNovelTest.main = function() {
 		sd[k].parent_id = k - 25;
 		sd[k].children_id = null;
 	}
+	var count = 49;
+	vn.SetupForking(function(cb) {
+		count++;
+		cb(count);
+	});
 	vn.Load(sd);
 	vn.Start();
 }
@@ -526,7 +564,6 @@ animation.BoxHighlighter.prototype.Hide = function() {
 	}
 }
 animation.BoxHighlighter.prototype.__class__ = animation.BoxHighlighter;
-if(typeof controls=='undefined') controls = {}
 controls.TextControl = function(p) {
 	if( p === $_ ) return;
 	this.text = "";
@@ -564,15 +601,6 @@ controls.TextControl.prototype.Show = function(cb) {
 	this.backlight.Show();
 }
 controls.TextControl.prototype.__class__ = controls.TextControl;
-if(typeof tools=='undefined') tools = {}
-tools.Random = function() { }
-tools.Random.__name__ = ["tools","Random"];
-tools.Random.Get = function(upper_cap) {
-	var cap = 100;
-	if(upper_cap != null) cap = upper_cap;
-	return Math.floor(Math.random() * cap);
-}
-tools.Random.prototype.__class__ = tools.Random;
 haxe.Timer = function(time_ms) {
 	if( time_ms === $_ ) return;
 	var arr = haxe_timers;
@@ -713,7 +741,6 @@ IntIter.prototype.next = function() {
 IntIter.prototype.__class__ = IntIter;
 visualnovel.VisualNovel = function(p) {
 	if( p === $_ ) return;
-	var me = this;
 	buildingblocks.Tile.call(this);
 	this.tabs = new toolbar.HorizontalBar();
 	this.ui = new Hash();
@@ -726,35 +753,7 @@ visualnovel.VisualNovel = function(p) {
 	this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
 	this.loading.ClassName("visualnovel-placeholder now-loading");
 	this.tabs.ClassName("visualnovel-ui tabs-holder");
-	var btn = new buildingblocks.Tile();
-	btn.ClassName("visualnovel-ui btn-next");
-	btn.Click(function(e) {
-		me.Next();
-	});
-	btn.Mouseover(function(e) {
-		me.spotlight.On(btn.Size(),btn.Position());
-	});
-	btn.Mouseleave(function(e) {
-		me.spotlight.Off();
-	});
-	this.ui.set("next",btn);
-	var btn2 = new buildingblocks.Tile();
-	btn2.ClassName("visualnovel-ui btn-previous");
-	btn2.Click(function(e) {
-		me.Previous();
-	});
-	btn2.Mouseover(function(e) {
-		me.spotlight.On(btn2.Size(),btn2.Position());
-	});
-	btn2.Mouseleave(function(e) {
-		me.spotlight.Off();
-	});
-	this.ui.set("previous",btn2);
-	var $it0 = this.ui.iterator();
-	while( $it0.hasNext() ) {
-		var u = $it0.next();
-		u.Hide();
-	}
+	this.p_setupui();
 }
 visualnovel.VisualNovel.__name__ = ["visualnovel","VisualNovel"];
 visualnovel.VisualNovel.__super__ = buildingblocks.Tile;
@@ -773,6 +772,7 @@ visualnovel.VisualNovel.prototype.selector = null;
 visualnovel.VisualNovel.prototype.ui = null;
 visualnovel.VisualNovel.prototype.spotlight = null;
 visualnovel.VisualNovel.prototype.permission = null;
+visualnovel.VisualNovel.prototype.fork_callto = null;
 visualnovel.VisualNovel.prototype.Start = function() {
 	this.active_scene = this.scene_tree;
 	this.shown_scene = this.active_scene;
@@ -828,13 +828,20 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		leafs = children;
 	}
 }
-visualnovel.VisualNovel.prototype.Fork = function(id) {
-	var scene = new visualnovel.Scene();
-	var scenedata = { layers : [], text : "", id : id, parent_id : this.active_scene.Data(), children_id : [], fork_text : null, fork_image : null, fork_number : 0};
-	this.active_scene.Branch(id);
-	scene.Load(scenedata);
-	this.scenes.set(id + "",scene);
-	return scene;
+visualnovel.VisualNovel.prototype.SetupForking = function(cb) {
+	this.fork_callto = cb;
+}
+visualnovel.VisualNovel.prototype.Fork = function(text,cb) {
+	var me = this;
+	this.fork_callto(function(id) {
+		var scene = new visualnovel.Scene();
+		var scenedata = { layers : [], text : "", id : id, parent_id : me.active_scene.Data(), children_id : [], fork_text : text, fork_image : null, fork_number : me.active_scene.Children().length};
+		me.active_scene.Branch(id);
+		scene.Load(scenedata);
+		me.scenes.set(id + "",scene);
+		me.Next(me.active_scene.Children().length - 1);
+		cb(scene);
+	});
 }
 visualnovel.VisualNovel.prototype.Next = function(choice) {
 	this.selector.Hide();
@@ -852,6 +859,7 @@ visualnovel.VisualNovel.prototype.Next = function(choice) {
 		this.scenes.get(this.active_scene.Data() + "").Hide();
 		this.active_scene = this.active_scene.Children()[selection];
 		this.shown_scene = this.active_scene;
+		haxe.Log.trace(this.active_scene,{ fileName : "VisualNovel.hx", lineNumber : 213, className : "visualnovel.VisualNovel", methodName : "Next"});
 		var scene = this.scenes.get(this.active_scene.Data() + "");
 		scene.Show();
 		this.past_history.push(this.active_scene);
@@ -863,14 +871,14 @@ visualnovel.VisualNovel.prototype.Next = function(choice) {
 		var k = $it0.next();
 		debug += k.Data() + ",";
 	}
-	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 237, className : "visualnovel.VisualNovel", methodName : "Next"});
+	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 226, className : "visualnovel.VisualNovel", methodName : "Next"});
 	debug = "";
 	var $it1 = this.future_history.iterator();
 	while( $it1.hasNext() ) {
 		var k = $it1.next();
 		debug += k.Data() + ",";
 	}
-	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 242, className : "visualnovel.VisualNovel", methodName : "Next"});
+	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 231, className : "visualnovel.VisualNovel", methodName : "Next"});
 	return;
 }
 visualnovel.VisualNovel.prototype.Previous = function() {
@@ -888,14 +896,14 @@ visualnovel.VisualNovel.prototype.Previous = function() {
 		var k = $it0.next();
 		debug += k.Data() + ",";
 	}
-	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 269, className : "visualnovel.VisualNovel", methodName : "Previous"});
+	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 258, className : "visualnovel.VisualNovel", methodName : "Previous"});
 	debug = "";
 	var $it1 = this.future_history.iterator();
 	while( $it1.hasNext() ) {
 		var k = $it1.next();
 		debug += k.Data() + ",";
 	}
-	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 274, className : "visualnovel.VisualNovel", methodName : "Previous"});
+	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 263, className : "visualnovel.VisualNovel", methodName : "Previous"});
 	return;
 }
 visualnovel.VisualNovel.prototype.Hide = function(cb) {
@@ -937,7 +945,7 @@ visualnovel.VisualNovel.prototype.p_prepareforks = function() {
 	while(_g < _g1.length) {
 		var fork = _g1[_g];
 		++_g;
-		haxe.Log.trace(fork,{ fileName : "VisualNovel.hx", lineNumber : 337, className : "visualnovel.VisualNovel", methodName : "p_prepareforks"});
+		haxe.Log.trace(fork,{ fileName : "VisualNovel.hx", lineNumber : 306, className : "visualnovel.VisualNovel", methodName : "p_prepareforks"});
 	}
 	this.selector.Purge();
 	if(this.active_forks.length > 1 && this.shown_scene == this.active_scene) {
@@ -954,6 +962,45 @@ visualnovel.VisualNovel.prototype.p_prepareforks = function() {
 		}
 		this.ui.get("next").Hide();
 	} else this.ui.get("next").Show();
+}
+visualnovel.VisualNovel.prototype.p_setupui = function() {
+	var me = this;
+	var _g = 0, _g1 = ["next","previous","fork"];
+	while(_g < _g1.length) {
+		var k = _g1[_g];
+		++_g;
+		var btn = [new buildingblocks.Tile()];
+		btn[0].ClassName("visualnovel-ui btn-" + k);
+		btn[0].Mouseover((function(btn) {
+			return function(e) {
+				me.spotlight.On(btn[0].Size(),btn[0].Position());
+			};
+		})(btn));
+		btn[0].Mouseleave((function() {
+			return function(e) {
+				me.spotlight.Off();
+			};
+		})());
+		this.ui.set(k,btn[0]);
+	}
+	this.ui.get("next").Click(function(e) {
+		me.Next();
+	});
+	this.ui.get("previous").Click(function(e) {
+		me.Previous();
+	});
+	this.ui.get("fork").Click(function(e) {
+		controls.InputControl.Input(function(userinput) {
+			me.Fork(userinput,function(scene) {
+				return;
+			});
+		});
+	});
+	var $it0 = this.ui.iterator();
+	while( $it0.hasNext() ) {
+		var u = $it0.next();
+		u.Hide();
+	}
 }
 visualnovel.VisualNovel.prototype.__class__ = visualnovel.VisualNovel;
 Std = function() { }
@@ -1649,6 +1696,8 @@ if(typeof(haxe_timers) == "undefined") haxe_timers = [];
 buildingblocks.Element.ID = 0;
 buildingblocks.Element.NAME = "FFOpenVN-Tile-Element-" + Math.floor(10000 * Math.random());
 buildingblocks.Element.TestCounter = 0;
+controls.InputControl.NAME = "FFOpenVN-InputControl-" + tools.Random.Get(20000);
+controls.InputControl.ID = 0;
 tools.Timer.TIME = haxe.Timer.stamp();
 js.Lib.onerror = null;
 toolbar.VerticalBar.NAME = "FFOpenVN-Vertical-Bar-" + tools.Random.Get(10000);

@@ -12,6 +12,7 @@ visualnovel-ui
 	tabs-holder
 	btn-next
 	btn-previous
+	btn-fork
 scene-text 
 	textbox
 horizontal-bar-icon 
@@ -28,3 +29,5 @@ ul.vertical-bar
 li.vertical-bar-li-#{k}
 button.vertical-bar-btn 
 button.vbar-btn-k#{k}
+input.static-input-control
+input.static-input-button

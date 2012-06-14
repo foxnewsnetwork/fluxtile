@@ -46,6 +46,14 @@ class VisualNovelTest {
 			trace( { id : sd[k].id, parent_id : sd[k].parent_id, children_id : sd[k].children_id, text : sd[k].text } );
 		}  
 		*/
+		var count = 49;
+		vn.SetupForking(function(cb : Int -> Void){ 
+			// Step 1: Get count from server
+			count++;
+			
+			// Step 2: Hit callback
+			cb(count);
+		} ); // SetupForking
 		vn.Load(sd);
 		vn.Start();
 		
