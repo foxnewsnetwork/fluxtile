@@ -30,7 +30,6 @@ class VisualNovel extends Tile {
 	
 	// UI
 	private var loading : Tile; // Now-Loading animation
-	private var tabs : HorizontalBar; // Control bar
 	private var selector : VerticalBar; // Choice making dialog
 	private var ui : Hash<Tile>; // buttons, clickers, etc.
 	
@@ -38,10 +37,12 @@ class VisualNovel extends Tile {
 	private var spotlight : Spotlight; // used to highlight stuff
 	
 	// user permission management
-	private var permission : Hash<Int>; // permission levels
+	private var permission : Int; // permission levels
+	private var edit_flag : Bool; // false = normal, true = edit
+	private var tabs : HorizontalBar; // Control bar
 	
 	// External callback interface
-	private var fork_callto : (Int -> Void) -> Void; // (Int, Int -> Void) -> Void 
+	private var fork_callto : (Int -> Void) -> Void; // server-communication use 
 	
 	/****
 	* Public Setup (YOU MUST CALL ALL OF THEM!)
@@ -122,9 +123,21 @@ class VisualNovel extends Tile {
 
 	} // Load
 	
+	// -1 = b& user
+	// 0 = anonymous user
+	// 1 = regular user
+	// 2 = collaborator
+	// 3 = owner
+	// 4 = mod
+	// 5 = admin
+	public function SetupPermission( level : Int ) { 
+		this.permission = level;
+	} // SetupPermission 
+	
 	public function SetupForking( cb ){ 
 		this.fork_callto = cb;
 	} // SetupForking
+	
 	 
 	/****
 	* Public methods
@@ -134,28 +147,46 @@ class VisualNovel extends Tile {
 		super();
 		this.tabs = new HorizontalBar();
 		this.ui = new Hash<Tile>();
-		this.permission = new Hash<Int>();
 		this.loading = new Tile();
 		this.spotlight = new Spotlight();
 		this.selector = new VerticalBar();
+		this.permission = 0;
+		this.edit_flag = false;
 		
 		// Step 2: Set UI
 		this.selector.ClassName("visualnovel-forkbox");
 		this.loading.Show();
 		this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
 		this.loading.ClassName("visualnovel-placeholder now-loading");
-		this.tabs.ClassName("visualnovel-ui tabs-holder");
+		this.tabs.ClassName("visualnovel-tabs-holder");
+		
+		this.tabs.Text("Text", function(){ return; } );
+		this.tabs.Text("Image", function(){ return; } );
 		
 		// Step 3: Setup clickables
 		this.p_setupui();
 	} // new
+	
+	// Toggles between regular mode and edit mode
+	public function Edit() { 
+		// Toggle the flag
+		this.edit_flag = !(this.edit_flag);
+		 
+		this.scenes.get(this.active_scene.Data() + "").Edit();
+		if( this.edit_flag ) { 
+			this.tabs.Show();	
+		} // if edit
+		else { 
+			this.tabs.Hide();
+		} // else	
+	} // Edit
 	
 	// Creates a new scene and attaches it wherever we are
 	//                                / - (s4 a)        
 	// (s1) - (s2) - (s3) (forked here) - (s4) - (s5) (forked here) - (s6)
 	//                                                           \ - (s6 a)
 	// New scenes should only be initialized when we get an ID from the server
-	// Notice that this method is in parallel!
+	// Notice that this method is in parallel
 	public function Fork(text : String, cb : Scene -> Void ) : Void {
 		this.fork_callto( function( id : Int ) { 
 			var scene = new Scene();
@@ -327,7 +358,7 @@ class VisualNovel extends Tile {
 	
 	private function p_setupui() { 
 		// Step 0: Standard setup
-		for( k in ['next', 'previous', 'fork'] ) { 
+		for( k in ['next', 'previous', 'fork', 'edit'] ) { 
 			var btn = new Tile();
 			btn.ClassName("visualnovel-ui btn-" + k);
 			btn.Mouseover(function(e){ 
@@ -358,6 +389,10 @@ class VisualNovel extends Tile {
 			}); // Input callback
 		} ); // Click
 		
+		// Step 4: edit btn
+		this.ui.get("edit").Click(function(e){ 
+			this.Edit();
+		} ); // Click
 		// Step 3: Set styles
 		for( u in this.ui ) { 
 			u.Hide();

@@ -10,6 +10,7 @@ class Scene extends Tile {
 	***/
 	private var text : TextControl;
 	private var tiles : Array<Tile>;
+	private var edit_flag : Bool;
 	
 	/****
 	* Public methods
@@ -19,7 +20,51 @@ class Scene extends Tile {
 		this.text = new TextControl();
 		this.text.ClassName("scene-text textbox");
 		this.tiles = [];
+		this.edit_flag = false;
 	} // new
+	
+	// Returns information on everything in a scene
+	public function GetState() : SceneData { 
+		var state : SceneData = { 
+			layers : [] ,
+			text : this.text.GetState() ,
+			id : -1 ,
+			parent_id : -1 ,
+			fork_text : "" ,
+			fork_image : "" ,
+			fork_number : -1 ,
+			children_id : []
+		} // state
+		
+		for( t in this.tiles ) { 
+			state.layers.push({
+				image : t.Image() ,
+				width : t.Size().width ,
+				height : t.Size().height ,
+				x : t.Position().x ,
+				y : t.Position().y
+			}) ; // layers.push
+		} // for
+		return state;	
+	} // GetState
+	
+	// Toggles between edit and normal mode
+	public function Edit() { 
+		this.edit_flag = !this.edit_flag;
+		
+		if( this.edit_flag ) { 
+			for( k in 0...this.tiles.length ) { 
+				this.tiles[k].Mode(1);
+			} // 
+			this.text.Edit();
+		} // if edit mode
+		else { 
+			for( k in 0...this.tiles.length ) { 
+				this.tiles[k].Mode(0);
+			} // 
+			this.text.Edit();
+		} // else
+	} // Edit
 	
 	public function Load( data : SceneData ) : Void {
 		// Step 1: Load the text

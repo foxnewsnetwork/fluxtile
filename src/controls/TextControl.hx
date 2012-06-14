@@ -1,10 +1,16 @@
 package controls;
 import buildingblocks.Tile;
+import js.JQuery;
 
 class TextControl extends Tile {
+	// Static
+	public static var ID = 0;
+	
 	// text
 	private var text : String;
 	private var backlight : Tile;
+	private var edit_flag : Bool;
+	private var textarea : JQuery;
 	
 	// public functions
 	public function Text( ?txt : String ) : String { 
@@ -16,12 +22,34 @@ class TextControl extends Tile {
 	} // Text
 	
 	public function new() : Void { 
+		TextControl.ID += 1;
 		this.text = "";
 		this.backlight = new Tile();
 		this.backlight.CSS("background-color", "rgb(250,250,250)");
 		this.backlight.CSS("opacity", "0.85");
+		this.edit_flag = false;
 		super();
 	} // new
+	
+	// Gets the state; in this case, the words typed in the textarea
+	public function GetState() { 
+		return this.textarea.val();
+	} // Save
+	
+	public function Edit() { 
+		this.edit_flag = !this.edit_flag;
+		
+		if( this.edit_flag ) { 
+			var txta = "<textarea rows='30' cols='20' class='textcontrol-edit' id='textcontrol-" + TextControl.ID + "'>";
+			txta += this.text;
+			txta += "</textarea>"; 
+			this.HTML(txta);
+			this.textarea = new JQuery("#" + "textcontrol" + TextControl.ID );
+		} // if edit
+		else { 
+			this.HTML("<p class=\"textcontrol\">" + this.text + "</p>");
+		} // else
+	} // Edit
 	
 	// public overrides
 	public override function Size( ?siz : { width : Float, height : Float } ) : { width : Float, height : Float } { 
