@@ -40,7 +40,7 @@ class TextControl extends Tile {
 		this.edit_flag = !this.edit_flag;
 		
 		if( this.edit_flag ) { 
-			var txta = "<textarea rows='30' cols='20' class='textcontrol-edit' id='textcontrol-" + TextControl.ID + "'>";
+			var txta = "<textarea rows='8' cols='90' class='textcontrol-edit' id='textcontrol-" + TextControl.ID + "'>";
 			txta += this.text;
 			txta += "</textarea>"; 
 			this.HTML(txta);

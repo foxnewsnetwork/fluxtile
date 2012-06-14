@@ -215,13 +215,16 @@ buildingblocks.Tile.prototype.Mouseleave = function(cb) {
 buildingblocks.Tile.prototype.p_EditMode = function() {
 	var me = this;
 	this.Mouseover(function(e) {
+		if(me.mode != 1) return;
 		me.CSS("border","2px solid blue");
 	});
 	this.Mouseleave(function(e) {
+		if(me.mode != 1) return;
 		me.CSS("border","none");
 	});
 	var mousedownflag = false, xdiff = 0.0, ydiff = 0.0;
 	this.domContainer.mousedown(function(e) {
+		if(me.mode != 1) return;
 		mousedownflag = true;
 		var body = me.domBody;
 		if(me.type_position == "%") {
@@ -235,6 +238,7 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 		}
 	});
 	this.domContainer.mousemove(function(e) {
+		if(me.mode != 1) return;
 		if(mousedownflag) {
 			var dx = xdiff, dy = ydiff;
 			var document = me.domBody;
@@ -251,6 +255,7 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 		return;
 	});
 	this.domContainer.mouseup(function(e) {
+		if(me.mode != 1) return;
 		mousedownflag = false;
 	});
 }
@@ -551,7 +556,7 @@ controls.TextControl.prototype.GetState = function() {
 controls.TextControl.prototype.Edit = function() {
 	this.edit_flag = !this.edit_flag;
 	if(this.edit_flag) {
-		var txta = "<textarea rows='30' cols='20' class='textcontrol-edit' id='textcontrol-" + controls.TextControl.ID + "'>";
+		var txta = "<textarea rows='8' cols='180' class='textcontrol-edit' id='textcontrol-" + controls.TextControl.ID + "'>";
 		txta += this.text;
 		txta += "</textarea>";
 		this.HTML(txta);

@@ -136,15 +136,21 @@ class Tile extends Element, implements Statistics {
 	private function p_EditMode() : Void { 
 		// Step 1: Manage mouseover and mouse leave UI
 		this.Mouseover( function(e : JqEvent) { 
+			if( this.mode != 1 )
+				return;
 			this.CSS("border", "2px solid blue");
 		} ); // end MouseOver
 		this.Mouseleave(function(e : JqEvent) { 
+			if( this.mode != 1 )
+				return;
 			this.CSS("border", "none");
 		} ); // end mouseleave
 		
 		// Step 2: Manage click-drag ui
 		var mousedownflag = false, xdiff = 0.0, ydiff = 0.0;
 		this.domContainer.mousedown(function(e:JqEvent){
+			if( this.mode != 1 )
+				return;
 			mousedownflag = true; 
 			var body = this.domBody;
 			if ( this.type_position == "%" ) { 
@@ -160,6 +166,8 @@ class Tile extends Element, implements Statistics {
 		} ); // end mousedown
 		
 		this.domContainer.mousemove(function(e:JqEvent){ 
+			if( this.mode != 1 )
+				return;
 			if (mousedownflag) {
 				var dx = xdiff, dy = ydiff;
 				var document = this.domBody;
@@ -177,6 +185,8 @@ class Tile extends Element, implements Statistics {
 			return;
 		} ); //end mousemove
 		this.domContainer.mouseup(function(e:JqEvent){ 
+			if( this.mode != 1 )
+				return;
 			mousedownflag = false;
 		} ); // end mouseup
 		
