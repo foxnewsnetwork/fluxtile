@@ -2,6 +2,7 @@ package buildingblocks;
 import js.JQuery;
 import statistics.Statistics;
 import tools.Timer;
+import tools.Tooltip;
 
 class Tile extends Element, implements Statistics {
 	/***
@@ -89,6 +90,7 @@ class Tile extends Element, implements Statistics {
 		
 		super();
 		this.CSS("z-index", "968");
+		Tile.ID += 1;
 	} // end new
 	
 	// Click function call back registry
@@ -154,15 +156,24 @@ class Tile extends Element, implements Statistics {
 			if( this.mode != 1 )
 				return;
 			this.CSS("border", "2px solid blue");
+			Tooltip.Show("Hold SHIFT to resize");
 		} ); // end MouseOver
 		this.Mouseleave(function(e : JqEvent) { 
 			if( this.mode != 1 )
 				return;
 			this.CSS("border", "none");
+			Tooltip.Hide();
 		} ); // end mouseleave
 		
-		// Step 2: Manage click-drag ui
+		// Step 2: Manage click-drag ui && resize ui
 		var mousedownflag = false, xdiff = 0.0, ydiff = 0.0;
+		var altdownflag = false;
+		this.domBody.keypress(function(e){ 
+			
+			altdownflag = !altdownflag;
+			trace(altdownflag);
+		}); // key press
+		
 		this.domContainer.mousedown(function(e:JqEvent){
 			if( this.mode != 1 )
 				return;
@@ -183,20 +194,27 @@ class Tile extends Element, implements Statistics {
 		this.domContainer.mousemove(function(e:JqEvent){ 
 			if( this.mode != 1 )
 				return;
-			if (mousedownflag) {
-				var dx = xdiff, dy = ydiff;
-				var document = this.domBody;
-				var mouseX, mouseY; 
-				if ( this.type_position == "%" ) { 
-					mouseX = 100 * e.pageX / document.width();
-					mouseY = 100 * e.pageY / document.height();
-				} // if
-				else { 
-					mouseX = e.pageX;
-					mouseY = e.pageY;
-				} // else
+			var topleft = this.Position();
+			var dx = xdiff, dy = ydiff;
+			var document = this.domBody;
+			var mouseX, mouseY; 
+			if ( this.type_position == "%" ) { 
+				mouseX = 100 * e.pageX / document.width();
+				mouseY = 100 * e.pageY / document.height();
+			} // if
+			else { 
+				mouseX = e.pageX;
+				mouseY = e.pageY;
+			} // else
+			
+			if( mousedownflag && altdownflag) { 
+				var w = mouseX < topleft.x + 5 ? 5.0 : mouseX - topleft.x + 0.0;
+				var h = mouseY < topleft.y + 5 ? 5.0 : mouseY - topleft.y + 0.0;
+				this.Size( { width : w, height : h } );
+			} // if resizing
+			else if (mousedownflag) {
 				this.Position({ x : mouseX - dx, y : mouseY - dy }); // end position
-			} // end if
+			} // else if moving around
 			return;
 		} ); //end mousemove
 		this.domContainer.mouseup(function(e:JqEvent){ 

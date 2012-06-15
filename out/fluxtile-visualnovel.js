@@ -124,6 +124,7 @@ buildingblocks.Tile = function(p) {
 	this.mouseleaves = [];
 	buildingblocks.Element.call(this);
 	this.CSS("z-index","968");
+	buildingblocks.Tile.ID += 1;
 }
 buildingblocks.Tile.__name__ = ["buildingblocks","Tile"];
 buildingblocks.Tile.__super__ = buildingblocks.Element;
@@ -225,12 +226,19 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 	this.Mouseover(function(e) {
 		if(me.mode != 1) return;
 		me.CSS("border","2px solid blue");
+		tools.Tooltip.Show("Hold SHIFT to resize");
 	});
 	this.Mouseleave(function(e) {
 		if(me.mode != 1) return;
 		me.CSS("border","none");
+		tools.Tooltip.Hide();
 	});
 	var mousedownflag = false, xdiff = 0.0, ydiff = 0.0;
+	var altdownflag = false;
+	this.domBody.keypress(function(e) {
+		altdownflag = !altdownflag;
+		haxe.Log.trace(altdownflag,{ fileName : "Tile.hx", lineNumber : 174, className : "buildingblocks.Tile", methodName : "p_EditMode"});
+	});
 	this.domContainer.mousedown(function(e) {
 		if(me.mode != 1) return;
 		mousedownflag = true;
@@ -247,19 +255,22 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 	});
 	this.domContainer.mousemove(function(e) {
 		if(me.mode != 1) return;
-		if(mousedownflag) {
-			var dx = xdiff, dy = ydiff;
-			var document = me.domBody;
-			var mouseX, mouseY;
-			if(me.type_position == "%") {
-				mouseX = 100 * e.pageX / document.width();
-				mouseY = 100 * e.pageY / document.height();
-			} else {
-				mouseX = e.pageX;
-				mouseY = e.pageY;
-			}
-			me.Position({ x : mouseX - dx, y : mouseY - dy});
+		var topleft = me.Position();
+		var dx = xdiff, dy = ydiff;
+		var document = me.domBody;
+		var mouseX, mouseY;
+		if(me.type_position == "%") {
+			mouseX = 100 * e.pageX / document.width();
+			mouseY = 100 * e.pageY / document.height();
+		} else {
+			mouseX = e.pageX;
+			mouseY = e.pageY;
 		}
+		if(mousedownflag && altdownflag) {
+			var w = mouseX < topleft.x + 5?5.0:mouseX - topleft.x;
+			var h = mouseY < topleft.y + 5?5.0:mouseY - topleft.y;
+			me.Size({ width : w, height : h});
+		} else if(mousedownflag) me.Position({ x : mouseX - dx, y : mouseY - dy});
 		return;
 	});
 	this.domContainer.mouseup(function(e) {
@@ -1598,6 +1609,27 @@ controls.IconsControl.prototype.p_resize = function() {
 	this.ipage.Position({ x : p.x + s.width / 2, y : p.y});
 }
 controls.IconsControl.prototype.__class__ = controls.IconsControl;
+tools.Tooltip = function() { }
+tools.Tooltip.__name__ = ["tools","Tooltip"];
+tools.Tooltip.Show = function(html) {
+	var t = tools.Tooltip.HaxeToolTip;
+	t.Show();
+	if(tools.Tooltip.ID > 0) t.HTML(html); else {
+		t.ClassName("haxetooltip");
+		t.HTML(html);
+		t.CSS("z-index","9999");
+		new js.JQuery("body").mousemove(function(e) {
+			var posX = e.pageX + 15.0;
+			var posY = e.pageY + 20.0;
+			t.Position({ x : posX, y : posY});
+		});
+		tools.Tooltip.ID += 1;
+	}
+}
+tools.Tooltip.Hide = function() {
+	tools.Tooltip.HaxeToolTip.Hide();
+}
+tools.Tooltip.prototype.__class__ = tools.Tooltip;
 animation.Spotlight = function(p) {
 	if( p === $_ ) return;
 	var me = this;
@@ -1809,4 +1841,6 @@ toolbar.VerticalBar.NAME = "FFOpenVN-Vertical-Bar-" + tools.Random.Get(10000);
 toolbar.VerticalBar.ID = 0;
 controls.IconsControl.IconsPerLine = 5;
 controls.IconsControl.IconsPerPage = 10;
+tools.Tooltip.HaxeToolTip = new buildingblocks.Tile();
+tools.Tooltip.ID = 0;
 tests.VisualNovelTest.main()
