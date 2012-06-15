@@ -54,6 +54,9 @@ class VisualNovelTest {
 			// Step 2: Hit callback
 			cb(count);
 		} ); // SetupForking
+		vn.SetupCommitting( function(data) { 
+			trace(data);
+		} );
 		vn.Load(sd);
 		vn.Start();
 		

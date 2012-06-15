@@ -49,21 +49,20 @@ class Scene extends Tile {
 	} // GetState
 	
 	// Toggles between edit and normal mode
-	public function Edit() { 
-		this.edit_flag = !this.edit_flag;
+	public function Edit(?flag : Bool) { 
+		this.edit_flag = flag != null ? flag : !this.edit_flag;
 		
 		if( this.edit_flag ) { 
 			for( k in 0...this.tiles.length ) { 
 				this.tiles[k].Mode(1);
 			} // 
-			this.text.Edit();
 		} // if edit mode
 		else { 
 			for( k in 0...this.tiles.length ) { 
 				this.tiles[k].Mode(0);
 			} // 
-			this.text.Edit();
 		} // else
+		this.text.Edit(this.edit_flag);
 	} // Edit
 	
 	public function Load( data : SceneData ) : Void {

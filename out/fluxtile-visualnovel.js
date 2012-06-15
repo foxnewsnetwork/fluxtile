@@ -312,11 +312,13 @@ datastructures.TreeNode = function(p) {
 datastructures.TreeNode.__name__ = ["datastructures","TreeNode"];
 datastructures.TreeNode.Plant = function(seed) {
 	var root = new datastructures.TreeNode();
+	root.parent = null;
 	root.children = [];
 	root.data = seed;
 	root.isroot = true;
 	return root;
 }
+datastructures.TreeNode.prototype.parent = null;
 datastructures.TreeNode.prototype.children = null;
 datastructures.TreeNode.prototype.data = null;
 datastructures.TreeNode.prototype.isroot = null;
@@ -329,8 +331,12 @@ datastructures.TreeNode.prototype.Print = function() {
 	}
 	return output;
 }
+datastructures.TreeNode.prototype.Parent = function() {
+	return this.parent;
+}
 datastructures.TreeNode.prototype.Branch = function(data) {
 	var child = new datastructures.TreeNode();
+	child.parent = this.Data();
 	child.data = data;
 	this.children.push(child);
 	return child;
@@ -393,6 +399,9 @@ tests.VisualNovelTest.main = function() {
 	vn.SetupForking(function(cb) {
 		count++;
 		cb(count);
+	});
+	vn.SetupCommitting(function(data) {
+		haxe.Log.trace(data,{ fileName : "VisualNovelTest.hx", lineNumber : 58, className : "tests.VisualNovelTest", methodName : "main"});
 	});
 	vn.Load(sd);
 	vn.Start();
@@ -551,16 +560,20 @@ controls.TextControl.prototype.Text = function(txt) {
 	return this.text;
 }
 controls.TextControl.prototype.GetState = function() {
-	return this.textarea.val();
+	return this.text;
 }
-controls.TextControl.prototype.Edit = function() {
-	this.edit_flag = !this.edit_flag;
+controls.TextControl.prototype.Edit = function(flag) {
+	var me = this;
+	this.edit_flag = flag != null?flag:!this.edit_flag;
 	if(this.edit_flag) {
-		var txta = "<textarea rows='8' cols='180' class='textcontrol-edit' id='textcontrol-" + controls.TextControl.ID + "'>";
+		var txta = "<textarea rows='8' cols='60' class='textcontrol-edit' id='textcontrol-" + controls.TextControl.ID + "'>";
 		txta += this.text;
 		txta += "</textarea>";
 		this.HTML(txta);
-		this.textarea = new js.JQuery("#" + "textcontrol" + controls.TextControl.ID);
+		this.textarea = new js.JQuery("#" + "textcontrol-" + controls.TextControl.ID);
+		this.textarea.keyup(function(e) {
+			me.text = me.textarea.val();
+		});
 	} else this.HTML("<p class=\"textcontrol\">" + this.text + "</p>");
 }
 controls.TextControl.prototype.Size = function(siz) {
@@ -682,23 +695,22 @@ visualnovel.Scene.prototype.GetState = function() {
 	}
 	return state;
 }
-visualnovel.Scene.prototype.Edit = function() {
-	this.edit_flag = !this.edit_flag;
+visualnovel.Scene.prototype.Edit = function(flag) {
+	this.edit_flag = flag != null?flag:!this.edit_flag;
 	if(this.edit_flag) {
 		var _g1 = 0, _g = this.tiles.length;
 		while(_g1 < _g) {
 			var k = _g1++;
 			this.tiles[k].Mode(1);
 		}
-		this.text.Edit();
 	} else {
 		var _g1 = 0, _g = this.tiles.length;
 		while(_g1 < _g) {
 			var k = _g1++;
 			this.tiles[k].Mode(0);
 		}
-		this.text.Edit();
 	}
+	this.text.Edit(this.edit_flag);
 }
 visualnovel.Scene.prototype.Load = function(data) {
 	this.text.Hide();
@@ -790,6 +802,7 @@ visualnovel.VisualNovel.prototype.permission = null;
 visualnovel.VisualNovel.prototype.edit_flag = null;
 visualnovel.VisualNovel.prototype.tabs = null;
 visualnovel.VisualNovel.prototype.fork_callto = null;
+visualnovel.VisualNovel.prototype.commit_callto = null;
 visualnovel.VisualNovel.prototype.Start = function() {
 	this.active_scene = this.scene_tree;
 	this.shown_scene = this.active_scene;
@@ -851,10 +864,43 @@ visualnovel.VisualNovel.prototype.SetupPermission = function(level) {
 visualnovel.VisualNovel.prototype.SetupForking = function(cb) {
 	this.fork_callto = cb;
 }
-visualnovel.VisualNovel.prototype.Edit = function() {
-	this.edit_flag = !this.edit_flag;
-	this.scenes.get(this.active_scene.Data() + "").Edit();
-	if(this.edit_flag) this.tabs.Show(); else this.tabs.Hide();
+visualnovel.VisualNovel.prototype.SetupCommitting = function(cb) {
+	this.commit_callto = cb;
+}
+visualnovel.VisualNovel.prototype.Commit = function() {
+	var me = this;
+	var lambda_generatestate = function(history) {
+		var temp_history = new List();
+		var full_state = [];
+		while(history.first() != null) {
+			var self_node = history.pop();
+			temp_history.push(self_node);
+			var scene_state = me.scenes.get(self_node.Data() + "").GetState();
+			var fork_node = me.forks.get(self_node.Parent() + "-" + self_node.Data());
+			var _g = 0, _g1 = self_node.Children();
+			while(_g < _g1.length) {
+				var lolcat = _g1[_g];
+				++_g;
+				scene_state.children_id.push(lolcat.Data());
+			}
+			scene_state.id = self_node.Data();
+			scene_state.parent_id = self_node.Parent();
+			scene_state.fork_number = fork_node.Choice();
+			scene_state.fork_text = fork_node.Text();
+			full_state.push(scene_state);
+		}
+		while(temp_history.first() != null) history.push(temp_history.pop());
+		return full_state;
+	};
+	var fullstate = lambda_generatestate(this.past_history);
+	fullstate = fullstate.concat(lambda_generatestate(this.future_history));
+	this.commit_callto(fullstate);
+}
+visualnovel.VisualNovel.prototype.Edit = function(flag) {
+	this.edit_flag = flag != null?flag:!this.edit_flag;
+	haxe.Log.trace(this.edit_flag,{ fileName : "VisualNovel.hx", lineNumber : 214, className : "visualnovel.VisualNovel", methodName : "Edit"});
+	this.scenes.get(this.shown_scene.Data() + "").Edit(this.edit_flag);
+	this.p_edittools();
 }
 visualnovel.VisualNovel.prototype.Fork = function(text,cb) {
 	var me = this;
@@ -877,6 +923,7 @@ visualnovel.VisualNovel.prototype.Next = function(choice) {
 		var scene = this.scenes.get(back2future.Data() + "");
 		this.shown_scene = back2future;
 		scene.Show();
+		scene.Edit(this.edit_flag);
 	} else {
 		if(this.active_scene.Children().length < 1) return null;
 		var selection = 0;
@@ -884,26 +931,12 @@ visualnovel.VisualNovel.prototype.Next = function(choice) {
 		this.scenes.get(this.active_scene.Data() + "").Hide();
 		this.active_scene = this.active_scene.Children()[selection];
 		this.shown_scene = this.active_scene;
-		haxe.Log.trace(this.active_scene,{ fileName : "VisualNovel.hx", lineNumber : 244, className : "visualnovel.VisualNovel", methodName : "Next"});
 		var scene = this.scenes.get(this.active_scene.Data() + "");
 		scene.Show();
 		this.past_history.push(this.active_scene);
+		scene.Edit(this.edit_flag);
 		this.p_prepareforks();
 	}
-	var debug = "";
-	var $it0 = this.past_history.iterator();
-	while( $it0.hasNext() ) {
-		var k = $it0.next();
-		debug += k.Data() + ",";
-	}
-	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 257, className : "visualnovel.VisualNovel", methodName : "Next"});
-	debug = "";
-	var $it1 = this.future_history.iterator();
-	while( $it1.hasNext() ) {
-		var k = $it1.next();
-		debug += k.Data() + ",";
-	}
-	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 262, className : "visualnovel.VisualNovel", methodName : "Next"});
 	return;
 }
 visualnovel.VisualNovel.prototype.Previous = function() {
@@ -915,20 +948,7 @@ visualnovel.VisualNovel.prototype.Previous = function() {
 	var scene = this.scenes.get(this.shown_scene.Data() + "");
 	scene.Show();
 	this.p_prepareforks();
-	var debug = "";
-	var $it0 = this.past_history.iterator();
-	while( $it0.hasNext() ) {
-		var k = $it0.next();
-		debug += k.Data() + ",";
-	}
-	haxe.Log.trace("this.past_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 289, className : "visualnovel.VisualNovel", methodName : "Previous"});
-	debug = "";
-	var $it1 = this.future_history.iterator();
-	while( $it1.hasNext() ) {
-		var k = $it1.next();
-		debug += k.Data() + ",";
-	}
-	haxe.Log.trace("this.future_history: " + debug,{ fileName : "VisualNovel.hx", lineNumber : 294, className : "visualnovel.VisualNovel", methodName : "Previous"});
+	scene.Edit(this.edit_flag);
 	return;
 }
 visualnovel.VisualNovel.prototype.Hide = function(cb) {
@@ -949,12 +969,12 @@ visualnovel.VisualNovel.prototype.Hide = function(cb) {
 visualnovel.VisualNovel.prototype.Show = function(cb) {
 	buildingblocks.Tile.prototype.Show.call(this,cb);
 	this.scenes.get(this.shown_scene.Data() + "").Show();
-	this.tabs.Show();
 	var $it0 = this.ui.iterator();
 	while( $it0.hasNext() ) {
 		var u = $it0.next();
 		u.Show();
 	}
+	this.p_edittools();
 }
 visualnovel.VisualNovel.prototype.p_prepareforks = function() {
 	var me = this;
@@ -966,12 +986,6 @@ visualnovel.VisualNovel.prototype.p_prepareforks = function() {
 		transitions.push(this.forks.get(this.active_scene.Data() + "-" + child.Data()));
 	}
 	this.active_forks = transitions;
-	var _g = 0, _g1 = this.active_forks;
-	while(_g < _g1.length) {
-		var fork = _g1[_g];
-		++_g;
-		haxe.Log.trace(fork,{ fileName : "VisualNovel.hx", lineNumber : 337, className : "visualnovel.VisualNovel", methodName : "p_prepareforks"});
-	}
 	this.selector.Purge();
 	if(this.active_forks.length > 1 && this.shown_scene == this.active_scene) {
 		this.selector.Show();
@@ -990,7 +1004,7 @@ visualnovel.VisualNovel.prototype.p_prepareforks = function() {
 }
 visualnovel.VisualNovel.prototype.p_setupui = function() {
 	var me = this;
-	var _g = 0, _g1 = ["next","previous","fork","edit"];
+	var _g = 0, _g1 = ["next","previous","fork","edit","commit"];
 	while(_g < _g1.length) {
 		var k = _g1[_g];
 		++_g;
@@ -1023,11 +1037,24 @@ visualnovel.VisualNovel.prototype.p_setupui = function() {
 	});
 	this.ui.get("edit").Click(function(e) {
 		me.Edit();
+		if(me.edit_flag) me.ui.get("commit").Show(); else me.ui.get("commit").Hide();
+	});
+	this.ui.get("commit").Click(function(e) {
+		me.Commit();
 	});
 	var $it0 = this.ui.iterator();
 	while( $it0.hasNext() ) {
 		var u = $it0.next();
 		u.Hide();
+	}
+}
+visualnovel.VisualNovel.prototype.p_edittools = function() {
+	if(this.edit_flag) {
+		this.tabs.Show();
+		this.ui.get("commit").Show();
+	} else {
+		this.tabs.Hide();
+		this.ui.get("commit").Hide();
 	}
 }
 visualnovel.VisualNovel.prototype.__class__ = visualnovel.VisualNovel;

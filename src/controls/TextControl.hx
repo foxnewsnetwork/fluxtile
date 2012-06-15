@@ -33,18 +33,21 @@ class TextControl extends Tile {
 	
 	// Gets the state; in this case, the words typed in the textarea
 	public function GetState() { 
-		return this.textarea.val();
+		return this.text;
 	} // Save
 	
-	public function Edit() { 
-		this.edit_flag = !this.edit_flag;
+	public function Edit(?flag : Bool) { 
+		this.edit_flag = flag != null ? flag : !this.edit_flag;
 		
 		if( this.edit_flag ) { 
-			var txta = "<textarea rows='8' cols='90' class='textcontrol-edit' id='textcontrol-" + TextControl.ID + "'>";
+			var txta = "<textarea rows='8' cols='60' class='textcontrol-edit' id='textcontrol-" + TextControl.ID + "'>";
 			txta += this.text;
 			txta += "</textarea>"; 
 			this.HTML(txta);
-			this.textarea = new JQuery("#" + "textcontrol" + TextControl.ID );
+			this.textarea = new JQuery("#" + "textcontrol-" + TextControl.ID );
+			this.textarea.keyup(function(e){ 
+				this.text = this.textarea.val();
+			}); // keyup
 		} // if edit
 		else { 
 			this.HTML("<p class=\"textcontrol\">" + this.text + "</p>");

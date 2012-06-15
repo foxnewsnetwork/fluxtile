@@ -43,6 +43,7 @@ class VisualNovel extends Tile {
 	
 	// External callback interface
 	private var fork_callto : (Int -> Void) -> Void; // server-communication use 
+	private var commit_callto : Array<SceneData> -> Void ; // saves data to server 
 	
 	/****
 	* Public Setup (YOU MUST CALL ALL OF THEM!)
@@ -138,6 +139,9 @@ class VisualNovel extends Tile {
 		this.fork_callto = cb;
 	} // SetupForking
 	
+	public function SetupCommitting( cb ) { 
+		this.commit_callto = cb;
+	} // SetupSaving
 	 
 	/****
 	* Public methods
@@ -167,18 +171,50 @@ class VisualNovel extends Tile {
 		this.p_setupui();
 	} // new
 	
+	// Call this function to save the current state to the server
+	public function Commit() { 
+		// Step 0: Declare variables
+		var lambda_generatestate = function(history : List<TreeNode<Int>>) { 
+			var temp_history = new List<TreeNode<Int>>();
+			var full_state = [];
+			while( history.first() != null ) { 
+				var self_node = history.pop();
+				temp_history.push(self_node);
+				var scene_state = this.scenes.get( self_node.Data() + "" ).GetState();
+				var fork_node = this.forks.get(self_node.Parent() + "-" + self_node.Data());
+				for( lolcat in self_node.Children() ) { 
+					scene_state.children_id.push( lolcat.Data() );
+				} // for lolcat
+				scene_state.id = self_node.Data();
+				scene_state.parent_id = self_node.Parent();
+				scene_state.fork_number = fork_node.Choice();
+				scene_state.fork_text = fork_node.Text();
+				full_state.push(scene_state);
+			} // while
+			while( temp_history.first() != null ) { 
+				history.push( temp_history.pop() );
+			} // while
+			return full_state;
+		}; // lambda_generatestate
+		
+		// Step 1: Go through the past history
+		var fullstate = lambda_generatestate( this.past_history );
+		
+		// Step 2: Go through the future history
+		fullstate = fullstate.concat( lambda_generatestate( this.future_history ) );
+		
+		// Step 3: Callto the server
+		this.commit_callto(fullstate);
+	} // Save
+	
 	// Toggles between regular mode and edit mode
-	public function Edit() { 
+	public function Edit(?flag : Bool) { 
 		// Toggle the flag
-		this.edit_flag = !(this.edit_flag);
-		 
-		this.scenes.get(this.active_scene.Data() + "").Edit();
-		if( this.edit_flag ) { 
-			this.tabs.Show();	
-		} // if edit
-		else { 
-			this.tabs.Hide();
-		} // else	
+		this.edit_flag = flag != null ? flag : !(this.edit_flag);
+		trace(this.edit_flag);
+		this.scenes.get(this.shown_scene.Data() + "").Edit(this.edit_flag);
+		this.p_edittools();
+			
 	} // Edit
 	
 	// Creates a new scene and attaches it wherever we are
@@ -224,6 +260,9 @@ class VisualNovel extends Tile {
 			
 			// Step c: Show the history scene
 			scene.Show();
+			
+			// Step 3.5 Managing edit mode
+			scene.Edit(this.edit_flag);
 		} // if
 		else { 
 			// Step 1: Null checking
@@ -241,25 +280,17 @@ class VisualNovel extends Tile {
 			this.scenes.get( this.active_scene.Data() + "" ).Hide();
 			this.active_scene = this.active_scene.Children()[selection];
 			this.shown_scene = this.active_scene;
-			trace( this.active_scene );
 			var scene = this.scenes.get(this.active_scene.Data() + "");
 			scene.Show();
 			this.past_history.push( this.active_scene );
+			
+			// Step 3.5 Managing edit mode
+			scene.Edit(this.edit_flag);
 			
 			// Step 4: Prepare forks
 			this.p_prepareforks();
 		}  // else
 		
-		var debug = "";
-		for( k in this.past_history ) { 
-			debug += k.Data() + ",";
-		} // for
-		trace("this.past_history: " + debug );
-		debug = "";
-		for( k in this.future_history ) { 
-			debug += k.Data() + ",";
-		} // for
-		trace("this.future_history: " + debug );
 		return;
 	} // Next
 	
@@ -281,17 +312,9 @@ class VisualNovel extends Tile {
 		scene.Show();
 		this.p_prepareforks();
 		
-		// Step 4: Debug trace
-		var debug = "";
-		for( k in this.past_history ) { 
-			debug += k.Data() + ",";
-		} // for
-		trace("this.past_history: " + debug );
-		debug = "";
-		for( k in this.future_history ) { 
-			debug += k.Data() + ",";
-		} // for
-		trace("this.future_history: " + debug );
+		// Step 3.5:
+		scene.Edit(this.edit_flag);
+			
 		return;
 	} // Previous
 	
@@ -314,10 +337,10 @@ class VisualNovel extends Tile {
 	public override function Show( ?cb : Void -> Void ) { 
 		super.Show(cb);
 		this.scenes.get( this.shown_scene.Data() + "" ).Show();
-		this.tabs.Show();
 		for( u in this.ui ) { 
 			u.Show();
 		} // for
+		this.p_edittools();
 	} // Show
 	
 	/****
@@ -331,11 +354,6 @@ class VisualNovel extends Tile {
 			transitions.push( this.forks.get( this.active_scene.Data() + "-" + child.Data() ) );
 		} // for
 		this.active_forks = transitions;
-		
-		// Step * : Debugging and tracing
-		for( fork in this.active_forks) { 
-			trace(fork);
-		} // for
 		
 		// Step 2: Loading into the vbar
 		this.selector.Purge();
@@ -358,7 +376,7 @@ class VisualNovel extends Tile {
 	
 	private function p_setupui() { 
 		// Step 0: Standard setup
-		for( k in ['next', 'previous', 'fork', 'edit'] ) { 
+		for( k in ['next', 'previous', 'fork', 'edit', 'commit'] ) { 
 			var btn = new Tile();
 			btn.ClassName("visualnovel-ui btn-" + k);
 			btn.Mouseover(function(e){ 
@@ -392,10 +410,31 @@ class VisualNovel extends Tile {
 		// Step 4: edit btn
 		this.ui.get("edit").Click(function(e){ 
 			this.Edit();
+			if ( this.edit_flag ) 
+				this.ui.get("commit").Show();
+			else
+				this.ui.get("commit").Hide();
 		} ); // Click
+		
+		// Step 5: commit button
+		this.ui.get("commit").Click(function(e){ 
+			this.Commit();
+		}); // Click
+		
 		// Step 3: Set styles
 		for( u in this.ui ) { 
 			u.Hide();
 		} // for
 	} // p_setupui
+	
+	private function p_edittools( ) { 
+		if( this.edit_flag ) { 
+			this.tabs.Show();
+			this.ui.get("commit").Show();	
+		} // if edit
+		else { 
+			this.tabs.Hide();
+			this.ui.get("commit").Hide();
+		} // else
+	} // p_edittools
 } // VisualNovel
