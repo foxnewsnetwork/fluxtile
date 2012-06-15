@@ -5,6 +5,11 @@ import tools.Timer;
 
 class Tile extends Element, implements Statistics {
 	/***
+	* Static Members Section
+	**/
+	public static var ID = 0;
+	
+	/***
 	* Private Members Section
 	**/
 	// Background div image
@@ -43,10 +48,20 @@ class Tile extends Element, implements Statistics {
 		else if( this.image == url ){ 
 			return this.image;
 		} // end else
-		this.image = url; 
+		this.image = url;
 		this.CSS("background-image", "url('" + url + "')" );
+		this.Size(this.NaturalSize());
 		return this.image;
 	} // Image
+	
+	// Gets the natural size of an image
+	public function NaturalSize() { 
+		this.domBody.append("<img id='tile-natural-size-finder-" + Tile.ID + "' src='" + this.image + "' style='position : absolute;'/>");
+		var j = new JQuery( "#tile-natural-size-finder-" + Tile.ID );
+		var s = { width : j.width() + 0.0, height : j.height() + 0.0 };
+		j.replaceWith("");
+		return s;
+	} // NaturalSize
 	
 	// Returns the mode or changes it
 	public function Mode( ?m : Int ) : Int { 

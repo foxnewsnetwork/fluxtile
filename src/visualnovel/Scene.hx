@@ -23,6 +23,30 @@ class Scene extends Tile {
 		this.edit_flag = false;
 	} // new
 	
+	public function AddTile( img : String, ?pos : { x : Float, y : Float } ) { 
+		var t = new Tile();
+		t.Image(img);
+		var location = pos != null ? pos : { x : 25.0, y : 25.0 };
+		t.Position(location);
+		t.Mode(1);
+		this.tiles.push(t);
+		t.Show();
+	} // AddTile
+	
+	public function RemoveTile(tile : Tile) { 
+		if (this.tiles.remove(tile))
+			tile.Hide();
+		else
+			throw "Tile remove problem";
+	} // RemoveTile
+	
+	public function ShowText(flag : Bool) { 
+		if( flag )
+			this.text.Show();
+		else
+			this.text.Hide();
+	} // HideText
+	
 	// Returns information on everything in a scene
 	public function GetState() : SceneData { 
 		var state : SceneData = { 

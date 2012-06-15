@@ -40,6 +40,7 @@ class VisualNovel extends Tile {
 	private var permission : Int; // permission levels
 	private var edit_flag : Bool; // false = normal, true = edit
 	private var tabs : HorizontalBar; // Control bar
+	private var icon_stockpile : IconsControl; // controls that hold images
 	
 	// External callback interface
 	private var fork_callto : (Int -> Void) -> Void; // server-communication use 
@@ -142,6 +143,14 @@ class VisualNovel extends Tile {
 	public function SetupCommitting( cb ) { 
 		this.commit_callto = cb;
 	} // SetupSaving
+	
+	public function SetupStockpile( imgs : Array<String> ) { 
+		for( img in imgs ) { 
+			this.icon_stockpile.AddIcon(img, function(){ 
+				this.scenes.get(this.shown_scene.Data() + "").AddTile(img);
+			}); // AddIcon callback
+		} // for
+	} // SetupStockpile
 	 
 	/****
 	* Public methods
@@ -158,14 +167,23 @@ class VisualNovel extends Tile {
 		this.edit_flag = false;
 		
 		// Step 2: Set UI
+		this.icon_stockpile = new IconsControl();
+		this.icon_stockpile.Hide();
+		this.icon_stockpile.ClassName("visualnovel-icon-stockpile");
 		this.selector.ClassName("visualnovel-forkbox");
 		this.loading.Show();
 		this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
 		this.loading.ClassName("visualnovel-placeholder now-loading");
 		this.tabs.ClassName("visualnovel-tabs-holder");
 		
-		this.tabs.Text("Text", function(){ return; } );
-		this.tabs.Text("Image", function(){ return; } );
+		this.tabs.Text("Text", function(){ 
+			this.scenes.get(this.shown_scene.Data() + "").ShowText(true);
+			this.icon_stockpile.Hide();
+		} ); // text callback
+		this.tabs.Text("Image", function(){ 
+			this.scenes.get(this.shown_scene.Data() + "").ShowText(false);
+			this.icon_stockpile.Show();
+		} ); // Images callback
 		
 		// Step 3: Setup clickables
 		this.p_setupui();
@@ -435,6 +453,7 @@ class VisualNovel extends Tile {
 		else { 
 			this.tabs.Hide();
 			this.ui.get("commit").Hide();
+			this.icon_stockpile.Hide();
 		} // else
 	} // p_edittools
 } // VisualNovel

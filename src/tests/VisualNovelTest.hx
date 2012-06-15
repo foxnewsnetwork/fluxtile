@@ -56,7 +56,8 @@ class VisualNovelTest {
 		} ); // SetupForking
 		vn.SetupCommitting( function(data) { 
 			trace(data);
-		} );
+		} ); // SetupCommitting
+		vn.SetupStockpile(["madotsuki.png", "madotsuki.png", "madotsuki.png"]);
 		vn.Load(sd);
 		vn.Start();
 		

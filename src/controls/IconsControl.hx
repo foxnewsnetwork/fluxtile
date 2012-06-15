@@ -45,8 +45,8 @@ class IconsControl extends Tile {
 		this.icons.push( new Tile() );
 		this.icons[n].Image(img);
 		
-		// Step 2: Configuring size
-		// this.p_resize();
+		// Step 2: Setting class
+		this.icons[n].ClassName("iconscontrol-icon iconscontrol-icon-" + n);
 		
 		// Step 3: Setting up callbacks
 		this.icons[n].Click(function(e){

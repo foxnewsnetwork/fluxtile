@@ -146,7 +146,15 @@ buildingblocks.Tile.prototype.Image = function(url) {
 	if(url == null) return this.image; else if(this.image == url) return this.image;
 	this.image = url;
 	this.CSS("background-image","url('" + url + "')");
+	this.Size(this.NaturalSize());
 	return this.image;
+}
+buildingblocks.Tile.prototype.NaturalSize = function() {
+	this.domBody.append("<img id='tile-natural-size-finder-" + buildingblocks.Tile.ID + "' src='" + this.image + "' style='position : absolute;'/>");
+	var j = new js.JQuery("#tile-natural-size-finder-" + buildingblocks.Tile.ID);
+	var s = { width : j.width() + 0.0, height : j.height() + 0.0};
+	j.replaceWith("");
+	return s;
 }
 buildingblocks.Tile.prototype.Mode = function(m) {
 	if(m != null) {
@@ -403,6 +411,7 @@ tests.VisualNovelTest.main = function() {
 	vn.SetupCommitting(function(data) {
 		haxe.Log.trace(data,{ fileName : "VisualNovelTest.hx", lineNumber : 58, className : "tests.VisualNovelTest", methodName : "main"});
 	});
+	vn.SetupStockpile(["madotsuki.png","madotsuki.png","madotsuki.png"]);
 	vn.Load(sd);
 	vn.Start();
 }
@@ -685,6 +694,21 @@ for(var k in buildingblocks.Tile.prototype ) visualnovel.Scene.prototype[k] = bu
 visualnovel.Scene.prototype.text = null;
 visualnovel.Scene.prototype.tiles = null;
 visualnovel.Scene.prototype.edit_flag = null;
+visualnovel.Scene.prototype.AddTile = function(img,pos) {
+	var t = new buildingblocks.Tile();
+	t.Image(img);
+	var location = pos != null?pos:{ x : 25.0, y : 25.0};
+	t.Position(location);
+	t.Mode(1);
+	this.tiles.push(t);
+	t.Show();
+}
+visualnovel.Scene.prototype.RemoveTile = function(tile) {
+	if(this.tiles.remove(tile)) tile.Hide(); else throw "Tile remove problem";
+}
+visualnovel.Scene.prototype.ShowText = function(flag) {
+	if(flag) this.text.Show(); else this.text.Hide();
+}
 visualnovel.Scene.prototype.GetState = function() {
 	var state = { layers : [], text : this.text.GetState(), id : -1, parent_id : -1, fork_text : "", fork_image : "", fork_number : -1, children_id : []};
 	var _g = 0, _g1 = this.tiles;
@@ -762,6 +786,7 @@ IntIter.prototype.next = function() {
 IntIter.prototype.__class__ = IntIter;
 visualnovel.VisualNovel = function(p) {
 	if( p === $_ ) return;
+	var me = this;
 	buildingblocks.Tile.call(this);
 	this.tabs = new toolbar.HorizontalBar();
 	this.ui = new Hash();
@@ -770,16 +795,21 @@ visualnovel.VisualNovel = function(p) {
 	this.selector = new toolbar.VerticalBar();
 	this.permission = 0;
 	this.edit_flag = false;
+	this.icon_stockpile = new controls.IconsControl();
+	this.icon_stockpile.Hide();
+	this.icon_stockpile.ClassName("visualnovel-icon-stockpile");
 	this.selector.ClassName("visualnovel-forkbox");
 	this.loading.Show();
 	this.loading.HTML("<h4 class=\"now-loading\">Now Loading...</h4>");
 	this.loading.ClassName("visualnovel-placeholder now-loading");
 	this.tabs.ClassName("visualnovel-tabs-holder");
 	this.tabs.Text("Text",function() {
-		return;
+		me.scenes.get(me.shown_scene.Data() + "").ShowText(true);
+		me.icon_stockpile.Hide();
 	});
 	this.tabs.Text("Image",function() {
-		return;
+		me.scenes.get(me.shown_scene.Data() + "").ShowText(false);
+		me.icon_stockpile.Show();
 	});
 	this.p_setupui();
 }
@@ -801,6 +831,7 @@ visualnovel.VisualNovel.prototype.spotlight = null;
 visualnovel.VisualNovel.prototype.permission = null;
 visualnovel.VisualNovel.prototype.edit_flag = null;
 visualnovel.VisualNovel.prototype.tabs = null;
+visualnovel.VisualNovel.prototype.icon_stockpile = null;
 visualnovel.VisualNovel.prototype.fork_callto = null;
 visualnovel.VisualNovel.prototype.commit_callto = null;
 visualnovel.VisualNovel.prototype.Start = function() {
@@ -867,6 +898,19 @@ visualnovel.VisualNovel.prototype.SetupForking = function(cb) {
 visualnovel.VisualNovel.prototype.SetupCommitting = function(cb) {
 	this.commit_callto = cb;
 }
+visualnovel.VisualNovel.prototype.SetupStockpile = function(imgs) {
+	var me = this;
+	var _g = 0;
+	while(_g < imgs.length) {
+		var img = [imgs[_g]];
+		++_g;
+		this.icon_stockpile.AddIcon(img[0],(function(img) {
+			return function() {
+				me.scenes.get(me.shown_scene.Data() + "").AddTile(img[0]);
+			};
+		})(img));
+	}
+}
 visualnovel.VisualNovel.prototype.Commit = function() {
 	var me = this;
 	var lambda_generatestate = function(history) {
@@ -898,7 +942,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 }
 visualnovel.VisualNovel.prototype.Edit = function(flag) {
 	this.edit_flag = flag != null?flag:!this.edit_flag;
-	haxe.Log.trace(this.edit_flag,{ fileName : "VisualNovel.hx", lineNumber : 214, className : "visualnovel.VisualNovel", methodName : "Edit"});
+	haxe.Log.trace(this.edit_flag,{ fileName : "VisualNovel.hx", lineNumber : 232, className : "visualnovel.VisualNovel", methodName : "Edit"});
 	this.scenes.get(this.shown_scene.Data() + "").Edit(this.edit_flag);
 	this.p_edittools();
 }
@@ -1055,6 +1099,7 @@ visualnovel.VisualNovel.prototype.p_edittools = function() {
 	} else {
 		this.tabs.Hide();
 		this.ui.get("commit").Hide();
+		this.icon_stockpile.Hide();
 	}
 }
 visualnovel.VisualNovel.prototype.__class__ = visualnovel.VisualNovel;
@@ -1475,6 +1520,7 @@ controls.IconsControl.prototype.AddIcon = function(img,cb) {
 	var n = this.icons.length;
 	this.icons.push(new buildingblocks.Tile());
 	this.icons[n].Image(img);
+	this.icons[n].ClassName("iconscontrol-icon iconscontrol-icon-" + n);
 	this.icons[n].Click(function(e) {
 		if(cb != null) cb();
 	});
@@ -1751,6 +1797,7 @@ if(typeof(haxe_timers) == "undefined") haxe_timers = [];
 buildingblocks.Element.ID = 0;
 buildingblocks.Element.NAME = "FFOpenVN-Tile-Element-" + Math.floor(10000 * Math.random());
 buildingblocks.Element.TestCounter = 0;
+buildingblocks.Tile.ID = 0;
 controls.InputControl.NAME = "FFOpenVN-InputControl-" + tools.Random.Get(20000);
 controls.InputControl.ID = 0;
 toolbar.HorizontalBar.NAME = "FFOpenVN-Horizontal-Bar-" + tools.Random.Get(10000);
