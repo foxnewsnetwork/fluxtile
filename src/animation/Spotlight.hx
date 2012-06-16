@@ -3,6 +3,20 @@ import js.JQuery;
 
 // Spotlight can highlight only 1 thing at a time
 class Spotlight {
+	// Static usage
+	public static var Lights : BoxHighlighter = new BoxHighlighter();
+	
+	public static function Shine( size : { width : Float, height : Float }, pos : { x : Float, y : Float } )  {
+		Spotlight.Lights.Size(size);
+		Spotlight.Lights.Position(pos);
+		Spotlight.Lights.Show();
+	} // On 
+	
+	public static function Die() { 
+		Spotlight.Lights.Hide();
+	} // Off
+	
+	// Standard usage
 	private var highlighter : BoxHighlighter;
 	private var mouse : { x : Float, y : Float };
 	

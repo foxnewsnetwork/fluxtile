@@ -3,12 +3,14 @@ import js.JQuery;
 import statistics.Statistics;
 import tools.Timer;
 import tools.Tooltip;
+import animation.Spotlight;
 
 class Tile extends Element, implements Statistics {
 	/***
 	* Static Members Section
 	**/
 	public static var ID = 0;
+	public static var SelectedTile : Tile = new Tile();
 	
 	/***
 	* Private Members Section
@@ -25,6 +27,8 @@ class Tile extends Element, implements Statistics {
 	private var mode : Int;
 	// User activity tracker
 	public var stats : { mouseover : Array<Float>, duration : Array<Float>, click : Array<Float> };
+	// edit_mode_initialized_flag
+	private var edit_mode_initialized_flag : Bool;
 	
 	/***
 	* Inherited Public Functions
@@ -91,6 +95,7 @@ class Tile extends Element, implements Statistics {
 		super();
 		this.CSS("z-index", "968");
 		Tile.ID += 1;
+		this.edit_mode_initialized_flag = false;
 	} // end new
 	
 	// Click function call back registry
@@ -146,36 +151,66 @@ class Tile extends Element, implements Statistics {
 			})(this)); // end mouseleave
 		}// end else
 	} //end Mouseleave
+	
+	public override function Hide(?cb : Void -> Void) { 
+		super.Hide(cb);
+		if ( Tile.SelectedTile == this)
+			Spotlight.Die();
+	} // Hide
 	/***
 	* Private Function Section
 	**/
+	
 	// Enters edit mode
-	private function p_EditMode() : Void { 
+	private function p_EditMode() : Void {
+		if (this.edit_mode_initialized_flag)
+			return;
+		
+		this.domContainer.bind("click", function(e : JqEvent) { 
+			if ( Tile.SelectedTile != this ) { 
+				Tile.SelectedTile = this;
+				Spotlight.Shine(this.Size(), this.Position());
+			} // if
+		} ); // bind click 
 		// Step 1: Manage mouseover and mouse leave UI
-		this.Mouseover( function(e : JqEvent) { 
+		var altdownflag = false;
+		this.domContainer.bind("mouseover", function(e : JqEvent) { 
 			if( this.mode != 1 )
 				return;
-			this.CSS("border", "2px solid blue");
-			Tooltip.Show("Hold SHIFT to resize");
+			if ( Tile.SelectedTile == this ) { 
+				if (altdownflag)
+					Tooltip.Show("Resize Mode (Press SPACE to toggle mode)");
+				else
+					Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+			} // if
+			else { 
+				Tooltip.Show( "Click to select" );
+			} // else
 		} ); // end MouseOver
-		this.Mouseleave(function(e : JqEvent) { 
+		this.domContainer.bind("mouseleave", function(e : JqEvent) { 
 			if( this.mode != 1 )
 				return;
-			this.CSS("border", "none");
 			Tooltip.Hide();
-		} ); // end mouseleave
+		} ); // end mouseleave 
 		
 		// Step 2: Manage click-drag ui && resize ui
 		var mousedownflag = false, xdiff = 0.0, ydiff = 0.0;
-		var altdownflag = false;
-		this.domBody.keypress(function(e){ 
-			
-			altdownflag = !altdownflag;
-			trace(altdownflag);
-		}); // key press
 		
+		this.domBody.keypress(function(e){ 
+			if ( this.mode != 1 )
+				return;
+			if ( e.keyCode == 32 ) { 
+				altdownflag = !altdownflag;
+				if ( altdownflag )
+					Tooltip.Show("Resize Mode (Press SPACE to toggle mode)");
+				else
+					Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+			} // if
+		}); // keypress
 		this.domContainer.mousedown(function(e:JqEvent){
 			if( this.mode != 1 )
+				return;
+			if( Tile.SelectedTile != this )
 				return;
 			mousedownflag = true; 
 			var body = this.domBody;
@@ -194,6 +229,8 @@ class Tile extends Element, implements Statistics {
 		this.domContainer.mousemove(function(e:JqEvent){ 
 			if( this.mode != 1 )
 				return;
+			if( Tile.SelectedTile != this )
+				return;
 			var topleft = this.Position();
 			var dx = xdiff, dy = ydiff;
 			var document = this.domBody;
@@ -208,17 +245,20 @@ class Tile extends Element, implements Statistics {
 			} // else
 			
 			if( mousedownflag && altdownflag) { 
-				var w = mouseX < topleft.x + 5 ? 5.0 : mouseX - topleft.x + 0.0;
-				var h = mouseY < topleft.y + 5 ? 5.0 : mouseY - topleft.y + 0.0;
+				var w = mouseX < topleft.x ? 10.0 : mouseX - topleft.x + 10.0;
+				var h = mouseY < topleft.y ? 10.0 : mouseY - topleft.y + 10.0;
 				this.Size( { width : w, height : h } );
 			} // if resizing
 			else if (mousedownflag) {
 				this.Position({ x : mouseX - dx, y : mouseY - dy }); // end position
 			} // else if moving around
+			Spotlight.Shine(this.Size(), this.Position());
 			return;
 		} ); //end mousemove
 		this.domContainer.mouseup(function(e:JqEvent){ 
 			if( this.mode != 1 )
+				return;
+			if( Tile.SelectedTile != this )
 				return;
 			mousedownflag = false;
 		} ); // end mouseup
@@ -227,10 +267,12 @@ class Tile extends Element, implements Statistics {
 		// TODO: write me!
 		// Step 4: Manage drag-resize ui 
 		// TODO: write me!
+		this.edit_mode_initialized_flag = true;
 	} // p_EditMode
 	
 	// Enters normal mode
 	private function p_NormalMode() : Void { 
-		// TODO: Write me!
+		Spotlight.Die();
+		Tooltip.Hide();
 	} // p_NormalMode
 } // Tile

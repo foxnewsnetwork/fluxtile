@@ -16,7 +16,7 @@ class BoxHighlighter {
 				this.edges.push( new Tile() );
 				this.edges[2*k + j].CSS( "background-color", "rgb(185,200,200)" );
 				this.edges[2*k + j].CSS( "border", "1px solid yellow" );
-				this.edges[2*k + j].CSS( "z-index", "9999" );
+				this.edges[2*k + j].CSS( "z-index", "9990" );
 			} // for j
 		} // for k
 	} // new

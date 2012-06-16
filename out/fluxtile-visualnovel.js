@@ -125,6 +125,7 @@ buildingblocks.Tile = function(p) {
 	buildingblocks.Element.call(this);
 	this.CSS("z-index","968");
 	buildingblocks.Tile.ID += 1;
+	this.edit_mode_initialized_flag = false;
 }
 buildingblocks.Tile.__name__ = ["buildingblocks","Tile"];
 buildingblocks.Tile.__super__ = buildingblocks.Element;
@@ -135,6 +136,7 @@ buildingblocks.Tile.prototype.mouseovers = null;
 buildingblocks.Tile.prototype.mouseleaves = null;
 buildingblocks.Tile.prototype.mode = null;
 buildingblocks.Tile.prototype.stats = null;
+buildingblocks.Tile.prototype.edit_mode_initialized_flag = null;
 buildingblocks.Tile.prototype.Stats = function() {
 	return this.stats;
 }
@@ -221,26 +223,41 @@ buildingblocks.Tile.prototype.Mouseleave = function(cb) {
 		})(this));
 	}
 }
+buildingblocks.Tile.prototype.Hide = function(cb) {
+	buildingblocks.Element.prototype.Hide.call(this,cb);
+	if(buildingblocks.Tile.SelectedTile == this) animation.Spotlight.Die();
+}
 buildingblocks.Tile.prototype.p_EditMode = function() {
 	var me = this;
-	this.Mouseover(function(e) {
-		if(me.mode != 1) return;
-		me.CSS("border","2px solid blue");
-		tools.Tooltip.Show("Hold SHIFT to resize");
+	if(this.edit_mode_initialized_flag) return;
+	this.domContainer.bind("click",function(e) {
+		if(buildingblocks.Tile.SelectedTile != me) {
+			buildingblocks.Tile.SelectedTile = me;
+			animation.Spotlight.Shine(me.Size(),me.Position());
+		}
 	});
-	this.Mouseleave(function(e) {
+	var altdownflag = false;
+	this.domContainer.bind("mouseover",function(e) {
 		if(me.mode != 1) return;
-		me.CSS("border","none");
+		if(buildingblocks.Tile.SelectedTile == me) {
+			if(altdownflag) tools.Tooltip.Show("Resize Mode (Press SPACE to toggle mode)"); else tools.Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+		} else tools.Tooltip.Show("Click to select");
+	});
+	this.domContainer.bind("mouseleave",function(e) {
+		if(me.mode != 1) return;
 		tools.Tooltip.Hide();
 	});
 	var mousedownflag = false, xdiff = 0.0, ydiff = 0.0;
-	var altdownflag = false;
 	this.domBody.keypress(function(e) {
-		altdownflag = !altdownflag;
-		haxe.Log.trace(altdownflag,{ fileName : "Tile.hx", lineNumber : 174, className : "buildingblocks.Tile", methodName : "p_EditMode"});
+		if(me.mode != 1) return;
+		if(e.keyCode == 32) {
+			altdownflag = !altdownflag;
+			if(altdownflag) tools.Tooltip.Show("Resize Mode (Press SPACE to toggle mode)"); else tools.Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+		}
 	});
 	this.domContainer.mousedown(function(e) {
 		if(me.mode != 1) return;
+		if(buildingblocks.Tile.SelectedTile != me) return;
 		mousedownflag = true;
 		var body = me.domBody;
 		if(me.type_position == "%") {
@@ -255,6 +272,7 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 	});
 	this.domContainer.mousemove(function(e) {
 		if(me.mode != 1) return;
+		if(buildingblocks.Tile.SelectedTile != me) return;
 		var topleft = me.Position();
 		var dx = xdiff, dy = ydiff;
 		var document = me.domBody;
@@ -267,18 +285,23 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 			mouseY = e.pageY;
 		}
 		if(mousedownflag && altdownflag) {
-			var w = mouseX < topleft.x + 5?5.0:mouseX - topleft.x;
-			var h = mouseY < topleft.y + 5?5.0:mouseY - topleft.y;
+			var w = mouseX < topleft.x?10.0:mouseX - topleft.x + 10.0;
+			var h = mouseY < topleft.y?10.0:mouseY - topleft.y + 10.0;
 			me.Size({ width : w, height : h});
 		} else if(mousedownflag) me.Position({ x : mouseX - dx, y : mouseY - dy});
+		animation.Spotlight.Shine(me.Size(),me.Position());
 		return;
 	});
 	this.domContainer.mouseup(function(e) {
 		if(me.mode != 1) return;
+		if(buildingblocks.Tile.SelectedTile != me) return;
 		mousedownflag = false;
 	});
+	this.edit_mode_initialized_flag = true;
 }
 buildingblocks.Tile.prototype.p_NormalMode = function() {
+	animation.Spotlight.Die();
+	tools.Tooltip.Hide();
 }
 buildingblocks.Tile.prototype.__class__ = buildingblocks.Tile;
 buildingblocks.Tile.__interfaces__ = [statistics.Statistics];
@@ -510,7 +533,7 @@ animation.BoxHighlighter = function(p) {
 			this.edges.push(new buildingblocks.Tile());
 			this.edges[2 * k + j].CSS("background-color","rgb(185,200,200)");
 			this.edges[2 * k + j].CSS("border","1px solid yellow");
-			this.edges[2 * k + j].CSS("z-index","9999");
+			this.edges[2 * k + j].CSS("z-index","9990");
 		}
 	}
 }
@@ -1641,6 +1664,14 @@ animation.Spotlight = function(p) {
 	});
 }
 animation.Spotlight.__name__ = ["animation","Spotlight"];
+animation.Spotlight.Shine = function(size,pos) {
+	animation.Spotlight.Lights.Size(size);
+	animation.Spotlight.Lights.Position(pos);
+	animation.Spotlight.Lights.Show();
+}
+animation.Spotlight.Die = function() {
+	animation.Spotlight.Lights.Hide();
+}
 animation.Spotlight.prototype.highlighter = null;
 animation.Spotlight.prototype.mouse = null;
 animation.Spotlight.prototype.On = function(size,pos) {
@@ -1830,6 +1861,7 @@ buildingblocks.Element.ID = 0;
 buildingblocks.Element.NAME = "FFOpenVN-Tile-Element-" + Math.floor(10000 * Math.random());
 buildingblocks.Element.TestCounter = 0;
 buildingblocks.Tile.ID = 0;
+buildingblocks.Tile.SelectedTile = new buildingblocks.Tile();
 controls.InputControl.NAME = "FFOpenVN-InputControl-" + tools.Random.Get(20000);
 controls.InputControl.ID = 0;
 toolbar.HorizontalBar.NAME = "FFOpenVN-Horizontal-Bar-" + tools.Random.Get(10000);
@@ -1843,4 +1875,5 @@ controls.IconsControl.IconsPerLine = 5;
 controls.IconsControl.IconsPerPage = 10;
 tools.Tooltip.HaxeToolTip = new buildingblocks.Tile();
 tools.Tooltip.ID = 0;
+animation.Spotlight.Lights = new animation.BoxHighlighter();
 tests.VisualNovelTest.main()
