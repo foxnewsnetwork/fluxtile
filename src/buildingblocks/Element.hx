@@ -141,4 +141,12 @@ class Element {
 		return html;
 		
 	} // end HTML
-}
+	
+	public function Append( html : String ) { 
+		this.domContainer.append(html);
+	} // HTML
+	
+	public function Prepend( html : String ) { 
+		this.domContainer.prepend(html);
+	} // Prepend
+} // Element
