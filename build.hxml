@@ -2,14 +2,17 @@
 
 # Uncomment the desirable target
 # JavaScript target
- -js out/fluxtile-powersurfer.js
- -main tests.PowerSurferMonsterTest
+ -js out/fluxtile-visualnovel.production.js
+ -main production.VisualNovelProduction
+ 
+ #-js out/fluxtile-powersurfer.js
+ #-main tests.PowerSurferMonsterTest
  
  #-js out/fluxtile-cookiemonster.js
  #-main tests.CookieMonsterTest
  
- # -js out/fluxtile-visualnovel.js
- # -main tests.VisualNovelTest
+ #-js out/fluxtile-visualnovel.js
+ #-main tests.VisualNovelTest
  
  #-js out/fluxtile-tree.js
  #-main tests.TreeTest

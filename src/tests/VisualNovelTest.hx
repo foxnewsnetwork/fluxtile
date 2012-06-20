@@ -11,12 +11,14 @@ class VisualNovelTest {
 		for( k in 0...50 ) { 
 			var layers = [];
 			for( j in 0...Random.Get(15) ) { 
-				layers.push( { 
+				layers.push( {
+					id : Random.Get(250) , 
 					image : "madotsuki.png" ,
 					width : 25.0 ,
 					height : 25.0 ,
 					x : Random.Get(250) + 0.01,
-					y : Random.Get(250) + 0.01
+					y : Random.Get(250) + 0.01 ,
+					element_id : Random.Get(250)
 				} ); // layers.push
 			} // for j
 			sd.push( {
@@ -25,6 +27,7 @@ class VisualNovelTest {
 				id : k ,
 				parent_id : null ,
 				children_id : [] ,
+				owner_id : Random.Get(250) ,
 				fork_text : "madotsuki scene choice " + k ,
 				fork_image : null ,
 				fork_number : k < 25 ? 0 : 1 ,
@@ -57,7 +60,15 @@ class VisualNovelTest {
 		vn.SetupCommitting( function(data) { 
 			trace(data);
 		} ); // SetupCommitting
-		vn.SetupStockpile(["madotsuki.png", "madotsuki.png", "madotsuki.png"]);
+		var stockdata = [
+			{ 
+				id : Random.Get(156) ,
+				picture : "madotsuki.png" ,
+				picture_small : "madotsuki.png" ,
+				metadata : "nothing here"
+			}
+		]; // stockdata
+		vn.SetupStockpile(stockdata);
 		vn.Load(sd);
 		vn.Start();
 		

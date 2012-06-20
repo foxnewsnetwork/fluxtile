@@ -7,7 +7,7 @@ import controls.TextControl;
 import controls.InputControl;
 import datastructures.Tree;
 import animation.Spotlight;
-
+import tools.Measure;
 import js.JQuery;
 
 class VisualNovel extends Tile {
@@ -144,11 +144,22 @@ class VisualNovel extends Tile {
 		this.commit_callto = cb;
 	} // SetupSaving
 	
-	public function SetupStockpile( imgs : Array<String> ) { 
-		for( img in imgs ) { 
-			this.icon_stockpile.AddIcon(img, function(){ 
-				this.scenes.get(this.shown_scene.Data() + "").AddTile(img);
-			}); // AddIcon callback
+	public function SetupStockpile( stockdata : Array<StockData> ) { 
+		for( stock in stockdata ) { 
+			this.icon_stockpile.AddIcon(stock.picture, (function(s : StockData){ 
+				var size = Measure.ImageSize(s.picture);
+				return function(){ 
+					this.scenes.get(this.shown_scene.Data() + "").AddLayer({
+						id : null ,
+						image : s.picture ,
+						width : size.width ,
+						height : size.height ,
+						x : 50.0 ,
+						y : 50.0 ,
+						element_id : s.id
+					}); // AddLayer
+				}; // return function
+			} )(stock)); // AddIcon lambda callback
 		} // for
 	} // SetupStockpile
 	 
@@ -250,6 +261,7 @@ class VisualNovel extends Tile {
 				id : id ,
 				parent_id : this.active_scene.Data() ,
 				children_id : [] ,
+				owner_id : null ,
 				fork_text : text ,
 				fork_image : null ,
 				fork_number : this.active_scene.Children().length

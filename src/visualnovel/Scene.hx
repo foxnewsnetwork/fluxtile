@@ -9,8 +9,10 @@ class Scene extends Tile {
 	* Private members
 	***/
 	private var text : TextControl;
-	private var tiles : Array<Tile>;
+	private var layers : Array<Layer>;
 	private var edit_flag : Bool;
+	
+	private var storage : { id : Int, owner_id : Int, parent_id : Int };
 	
 	/****
 	* Public methods
@@ -19,26 +21,24 @@ class Scene extends Tile {
 		super();
 		this.text = new TextControl();
 		this.text.ClassName("scene-text textbox");
-		this.tiles = [];
+		this.layers = [];
 		this.edit_flag = false;
 	} // new
 	
-	public function AddTile( img : String, ?pos : { x : Float, y : Float } ) { 
-		var t = new Tile();
-		t.Image(img);
-		var location = pos != null ? pos : { x : 25.0, y : 25.0 };
-		t.Position(location);
-		t.Mode(1);
-		this.tiles.push(t);
-		t.Show();
-	} // AddTile
+	public function AddLayer( data : LayerData ) { 
+		var layer = new Layer();
+		layer.Load(data);
+		layer.Mode(1);
+		this.layers.push(layer);
+		layer.Show();
+	} // AddLayer
 	
-	public function RemoveTile(tile : Tile) { 
-		if (this.tiles.remove(tile))
-			tile.Hide();
+	public function RemoveLayer(layer : Layer) { 
+		if (this.layers.remove(layer))
+			layer.Hide();
 		else
 			throw "Tile remove problem";
-	} // RemoveTile
+	} // RemoveLayer
 	
 	public function ShowText(flag : Bool) { 
 		if( flag )
@@ -52,22 +52,17 @@ class Scene extends Tile {
 		var state : SceneData = { 
 			layers : [] ,
 			text : this.text.GetState() ,
-			id : -1 ,
-			parent_id : -1 ,
+			id : this.storage.id ,
+			parent_id : this.storage.parent_id ,
+			owner_id : this.storage.owner_id ,
 			fork_text : "" ,
 			fork_image : "" ,
 			fork_number : -1 ,
 			children_id : []
 		} // state
 		
-		for( t in this.tiles ) { 
-			state.layers.push({
-				image : t.Image() ,
-				width : t.Size().width ,
-				height : t.Size().height ,
-				x : t.Position().x ,
-				y : t.Position().y
-			}) ; // layers.push
+		for( layer in this.layers ) { 
+			state.layers.push( layer.GetState() );
 		} // for
 		return state;	
 	} // GetState
@@ -77,14 +72,12 @@ class Scene extends Tile {
 		this.edit_flag = flag != null ? flag : !this.edit_flag;
 		
 		if( this.edit_flag ) { 
-			for( k in 0...this.tiles.length ) { 
-				this.tiles[k].Mode(1);
-			} // 
+			for( layer in this.layers )
+				layer.Mode(1); 
 		} // if edit mode
 		else { 
-			for( k in 0...this.tiles.length ) { 
-				this.tiles[k].Mode(0);
-			} // 
+			for( layer in this.layers )
+				layer.Mode(0);
 		} // else
 		this.text.Edit(this.edit_flag);
 	} // Edit
@@ -95,13 +88,11 @@ class Scene extends Tile {
 		this.text.Text(data.text);
 		
 		// Step 2: Load the tiles
-		this.tiles = [];
-		for( k in 0...data.layers.length ) {
-			this.tiles.push(new Tile());
-			this.tiles[k].Hide();
-			this.tiles[k].Image(data.layers[k].image);
-			this.tiles[k].Position({ x : data.layers[k].x, y : data.layers[k].y});
-			this.tiles[k].Size({ width : data.layers[k].width, height : data.layers[k].height});
+		this.layers = [];
+		for( layerdata in data.layers ) { 
+			var layer = new Layer();
+			layer.Load(layerdata);
+			this.layers.push(layer);
 		} // for
 	} // Load
 	
@@ -110,16 +101,16 @@ class Scene extends Tile {
 	***/
 	public override function Show(?cb : Void -> Void) : Void {
 		super.Show(cb);
-		for( k in 0...this.tiles.length ){ 
-			this.tiles[k].Show();
+		for( k in 0...this.layers.length ){ 
+			this.layers[k].Show();
 		} // for
 		this.text.Show();
 	} // Show
 	
 	public override function Hide(?cb : Void -> Void) : Void {
 		super.Hide(cb);
-		for( k in 0...this.tiles.length ){ 
-			this.tiles[k].Hide();
+		for( k in 0...this.layers.length ){ 
+			this.layers[k].Hide();
 		} // for
 		this.text.Hide();
 	} // Show
