@@ -147,8 +147,9 @@ class VisualNovel extends Tile {
 	public function SetupStockpile( stockdata : Array<StockData> ) { 
 		for( stock in stockdata ) { 
 			this.icon_stockpile.AddIcon(stock.picture, (function(s : StockData){ 
-				var size = Measure.ImageSize(s.picture);
 				return function(){ 
+					var size = Measure.ImageSize(s.picture);
+					trace(size);
 					this.scenes.get(this.shown_scene.Data() + "").AddLayer({
 						id : null ,
 						image : s.picture ,
@@ -210,6 +211,7 @@ class VisualNovel extends Tile {
 				var self_node = history.pop();
 				temp_history.push(self_node);
 				var scene_state = this.scenes.get( self_node.Data() + "" ).GetState();
+				trace( this.forks );
 				var fork_node = this.forks.get(self_node.Parent() + "-" + self_node.Data());
 				for( lolcat in self_node.Children() ) { 
 					scene_state.children_id.push( lolcat.Data() );
@@ -240,7 +242,6 @@ class VisualNovel extends Tile {
 	public function Edit(?flag : Bool) { 
 		// Toggle the flag
 		this.edit_flag = flag != null ? flag : !(this.edit_flag);
-		trace(this.edit_flag);
 		this.scenes.get(this.shown_scene.Data() + "").Edit(this.edit_flag);
 		this.p_edittools();
 			
@@ -269,6 +270,9 @@ class VisualNovel extends Tile {
 			this.active_scene.Branch(id);
 			scene.Load(scenedata);
 			this.scenes.set(id + "", scene);
+			var fork = new Fork();
+			fork.Load(scenedata);
+			this.forks.set( scenedata.parent_id + "-" + scenedata.id, fork );
 			this.Next(this.active_scene.Children().length - 1);
 			cb(scene);
 		} ); // fork_callto callback 

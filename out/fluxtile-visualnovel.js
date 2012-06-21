@@ -406,11 +406,11 @@ datastructures.TreeNode.prototype.__class__ = datastructures.TreeNode;
 tools.Measure = function() { }
 tools.Measure.__name__ = ["tools","Measure"];
 tools.Measure.ImageSize = function(img) {
-	var tile = new buildingblocks.Tile();
-	tile.Image(img);
-	var size = tile.Size();
-	tile.Hide();
-	tile.Remove();
+	var output = "<img alt='gettingsize' src='" + img + "' id='" + tools.Measure.NAME + "' style='position : absolute;' />";
+	new js.JQuery("body").append(output);
+	var jq = new js.JQuery("#" + tools.Measure.NAME);
+	var size = { width : jq.width() + 0.0, height : jq.height() + 0.0};
+	jq.replaceWith("");
 	return size;
 }
 tools.Measure.prototype.__class__ = tools.Measure;
@@ -428,6 +428,7 @@ visualnovel.Layer.prototype.Storage = function(data) {
 	return this.storage;
 }
 visualnovel.Layer.prototype.Load = function(data) {
+	this.storage = { id : null, element_id : null};
 	this.Image(data.image);
 	this.storage.id = data.id;
 	this.storage.element_id = data.element_id;
@@ -453,6 +454,7 @@ tests.VisualNovelTest = function() { }
 tests.VisualNovelTest.__name__ = ["tests","VisualNovelTest"];
 tests.VisualNovelTest.main = function() {
 	var vn = new visualnovel.VisualNovel();
+	var sd0 = [{ layers : [], text : null, id : 1, parent_id : null, children_id : null, owner_id : 1, fork_text : null, fork_image : null, fork_number : null}];
 	var sd = [];
 	var _g = 0;
 	while(_g < 50) {
@@ -484,11 +486,11 @@ tests.VisualNovelTest.main = function() {
 		cb(count);
 	});
 	vn.SetupCommitting(function(data) {
-		haxe.Log.trace(data,{ fileName : "VisualNovelTest.hx", lineNumber : 61, className : "tests.VisualNovelTest", methodName : "main"});
+		haxe.Log.trace(data,{ fileName : "VisualNovelTest.hx", lineNumber : 72, className : "tests.VisualNovelTest", methodName : "main"});
 	});
 	var stockdata = [{ id : tools.Random.Get(156), picture : "madotsuki.png", picture_small : "madotsuki.png", metadata : "nothing here"}];
 	vn.SetupStockpile(stockdata);
-	vn.Load(sd);
+	vn.Load(sd0);
 	vn.Start();
 }
 tests.VisualNovelTest.prototype.__class__ = tests.VisualNovelTest;
@@ -762,6 +764,7 @@ visualnovel.Scene = function(p) {
 	this.text.ClassName("scene-text textbox");
 	this.layers = [];
 	this.edit_flag = false;
+	this.storage = { id : null, owner_id : null, parent_id : null};
 }
 visualnovel.Scene.__name__ = ["visualnovel","Scene"];
 visualnovel.Scene.__super__ = buildingblocks.Tile;
@@ -980,8 +983,9 @@ visualnovel.VisualNovel.prototype.SetupStockpile = function(stockdata) {
 		var stock = stockdata[_g];
 		++_g;
 		this.icon_stockpile.AddIcon(stock.picture,(function(s) {
-			var size = tools.Measure.ImageSize(s.picture);
 			return function() {
+				var size = tools.Measure.ImageSize(s.picture);
+				haxe.Log.trace(size,{ fileName : "VisualNovel.hx", lineNumber : 152, className : "visualnovel.VisualNovel", methodName : "SetupStockpile"});
 				me.scenes.get(me.shown_scene.Data() + "").AddLayer({ id : null, image : s.picture, width : size.width, height : size.height, x : 50.0, y : 50.0, element_id : s.id});
 			};
 		})(stock));
@@ -996,6 +1000,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 			var self_node = history.pop();
 			temp_history.push(self_node);
 			var scene_state = me.scenes.get(self_node.Data() + "").GetState();
+			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 214, className : "visualnovel.VisualNovel", methodName : "Commit"});
 			var fork_node = me.forks.get(self_node.Parent() + "-" + self_node.Data());
 			var _g = 0, _g1 = self_node.Children();
 			while(_g < _g1.length) {
@@ -1018,7 +1023,6 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 }
 visualnovel.VisualNovel.prototype.Edit = function(flag) {
 	this.edit_flag = flag != null?flag:!this.edit_flag;
-	haxe.Log.trace(this.edit_flag,{ fileName : "VisualNovel.hx", lineNumber : 243, className : "visualnovel.VisualNovel", methodName : "Edit"});
 	this.scenes.get(this.shown_scene.Data() + "").Edit(this.edit_flag);
 	this.p_edittools();
 }
@@ -1030,6 +1034,9 @@ visualnovel.VisualNovel.prototype.Fork = function(text,cb) {
 		me.active_scene.Branch(id);
 		scene.Load(scenedata);
 		me.scenes.set(id + "",scene);
+		var fork = new visualnovel.Fork();
+		fork.Load(scenedata);
+		me.forks.set(scenedata.parent_id + "-" + scenedata.id,fork);
 		me.Next(me.active_scene.Children().length - 1);
 		cb(scene);
 	});
@@ -1906,6 +1913,7 @@ buildingblocks.Tile.ID = 0;
 buildingblocks.Tile.SelectedTile = new buildingblocks.Tile();
 controls.InputControl.NAME = "FFOpenVN-InputControl-" + tools.Random.Get(20000);
 controls.InputControl.ID = 0;
+tools.Measure.NAME = "FFOpenVN-MeasureTool-" + tools.Random.Get(999999);
 toolbar.HorizontalBar.NAME = "FFOpenVN-Horizontal-Bar-" + tools.Random.Get(10000);
 toolbar.HorizontalBar.ID = 0;
 controls.TextControl.ID = 0;

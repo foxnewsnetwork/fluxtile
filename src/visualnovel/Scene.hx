@@ -23,6 +23,7 @@ class Scene extends Tile {
 		this.text.ClassName("scene-text textbox");
 		this.layers = [];
 		this.edit_flag = false;
+		this.storage = { id : null, owner_id : null, parent_id : null };
 	} // new
 	
 	public function AddLayer( data : LayerData ) { 

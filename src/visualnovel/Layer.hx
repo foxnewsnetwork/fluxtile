@@ -11,6 +11,7 @@ class Layer extends Tile {
 	} // Storage
 	
 	public function Load( data : LayerData ) { 
+		this.storage = { id : null, element_id : null };
 		this.Image(data.image);
 		this.storage.id = data.id;
 		this.storage.element_id = data.element_id;

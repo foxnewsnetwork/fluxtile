@@ -6,6 +6,17 @@ import tools.Random;
 class VisualNovelTest {
 	public static function main() { 
 		var vn = new VisualNovel();
+		var sd0 = [{
+			layers : [] ,
+			text : null ,
+			id : 1 ,
+			parent_id : null ,
+			children_id : null ,
+			owner_id : 1 ,
+			fork_text : null ,
+			fork_image : null ,
+			fork_number : null 
+		}]; // sd0
 		var sd = [];
 		// Simulating data
 		for( k in 0...50 ) { 
@@ -69,7 +80,7 @@ class VisualNovelTest {
 			}
 		]; // stockdata
 		vn.SetupStockpile(stockdata);
-		vn.Load(sd);
+		vn.Load(sd0);
 		vn.Start();
 		
 	} // main
