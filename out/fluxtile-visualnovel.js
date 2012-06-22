@@ -319,6 +319,20 @@ tools.Random.Get = function(upper_cap) {
 	if(upper_cap != null) cap = upper_cap;
 	return Math.floor(Math.random() * cap);
 }
+tools.Random.Text = function(len) {
+	var l = 100;
+	if(len != null) l = len;
+	var alphabet = ["a","b","c","d","e","f","g","h","i","j","k","l","%","m","n","o","p","q","r","s","t","u","v","w","x","y","z"];
+	var rand_arr = [];
+	var $it0 = new IntIter(0,l);
+	while( $it0.hasNext() ) {
+		var k = $it0.next();
+		rand_arr.push(tools.Random.Get(alphabet.length));
+	}
+	return Lambda.map(rand_arr,function(n) {
+		return alphabet[n];
+	}).join("");
+}
 tools.Random.prototype.__class__ = tools.Random;
 if(typeof controls=='undefined') controls = {}
 controls.InputControl = function(p) {
@@ -454,7 +468,7 @@ tests.VisualNovelTest = function() { }
 tests.VisualNovelTest.__name__ = ["tests","VisualNovelTest"];
 tests.VisualNovelTest.main = function() {
 	var vn = new visualnovel.VisualNovel();
-	var sd0 = [{ layers : [], text : null, id : 1, parent_id : null, children_id : null, owner_id : 1, fork_text : null, fork_image : null, fork_number : null}];
+	var sd0 = [{ layers : [], text : tools.Random.Text(50), id : 1, parent_id : null, children_id : null, owner_id : 1, fork_text : null, fork_image : null, fork_number : null}];
 	var sd = [];
 	var _g = 0;
 	while(_g < 50) {
@@ -465,7 +479,7 @@ tests.VisualNovelTest.main = function() {
 			var j = _g2++;
 			layers.push({ id : tools.Random.Get(250), image : "madotsuki.png", width : 25.0, height : 25.0, x : tools.Random.Get(250) + 0.01, y : tools.Random.Get(250) + 0.01, element_id : tools.Random.Get(250)});
 		}
-		sd.push({ layers : layers, text : "Madotsuki scene number " + k, id : k, parent_id : null, children_id : [], owner_id : tools.Random.Get(250), fork_text : "madotsuki scene choice " + k, fork_image : null, fork_number : k < 25?0:1});
+		sd.push({ layers : layers, text : "Madotsuki scene number " + k + tools.Random.Text(50), id : k, parent_id : null, children_id : [], owner_id : tools.Random.Get(250), fork_text : "madotsuki scene choice " + k, fork_image : null, fork_number : k < 25?0:1});
 	}
 	var _g = 0;
 	while(_g < 25) {
@@ -491,6 +505,7 @@ tests.VisualNovelTest.main = function() {
 	var stockdata = [{ id : tools.Random.Get(156), picture : "madotsuki.png", picture_small : "madotsuki.png", metadata : "nothing here"}];
 	vn.SetupStockpile(stockdata);
 	vn.Load(sd0);
+	vn.SetupPermission({ user_id : 12, level : 3});
 	vn.Start();
 }
 tests.VisualNovelTest.prototype.__class__ = tests.VisualNovelTest;
@@ -827,6 +842,9 @@ visualnovel.Scene.prototype.Load = function(data) {
 		layer.Load(layerdata);
 		this.layers.push(layer);
 	}
+	this.storage.id = data.id;
+	this.storage.owner_id = data.owner_id;
+	this.storage.parent_id = data.parent_id;
 }
 visualnovel.Scene.prototype.Show = function(cb) {
 	buildingblocks.Tile.prototype.Show.call(this,cb);
@@ -907,6 +925,7 @@ visualnovel.VisualNovel.prototype.selector = null;
 visualnovel.VisualNovel.prototype.ui = null;
 visualnovel.VisualNovel.prototype.spotlight = null;
 visualnovel.VisualNovel.prototype.permission = null;
+visualnovel.VisualNovel.prototype.user_id = null;
 visualnovel.VisualNovel.prototype.edit_flag = null;
 visualnovel.VisualNovel.prototype.tabs = null;
 visualnovel.VisualNovel.prototype.icon_stockpile = null;
@@ -967,8 +986,9 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		leafs = children;
 	}
 }
-visualnovel.VisualNovel.prototype.SetupPermission = function(level) {
-	this.permission = level;
+visualnovel.VisualNovel.prototype.SetupPermission = function(data) {
+	this.permission = data.level;
+	this.user_id = data.user_id;
 }
 visualnovel.VisualNovel.prototype.SetupForking = function(cb) {
 	this.fork_callto = cb;
@@ -985,7 +1005,7 @@ visualnovel.VisualNovel.prototype.SetupStockpile = function(stockdata) {
 		this.icon_stockpile.AddIcon(stock.picture,(function(s) {
 			return function() {
 				var size = tools.Measure.ImageSize(s.picture);
-				haxe.Log.trace(size,{ fileName : "VisualNovel.hx", lineNumber : 152, className : "visualnovel.VisualNovel", methodName : "SetupStockpile"});
+				haxe.Log.trace(size,{ fileName : "VisualNovel.hx", lineNumber : 154, className : "visualnovel.VisualNovel", methodName : "SetupStockpile"});
 				me.scenes.get(me.shown_scene.Data() + "").AddLayer({ id : null, image : s.picture, width : size.width, height : size.height, x : 50.0, y : 50.0, element_id : s.id});
 			};
 		})(stock));
@@ -993,6 +1013,7 @@ visualnovel.VisualNovel.prototype.SetupStockpile = function(stockdata) {
 }
 visualnovel.VisualNovel.prototype.Commit = function() {
 	var me = this;
+	if(!this.p_checkpermission("commit")) return;
 	var lambda_generatestate = function(history) {
 		var temp_history = new List();
 		var full_state = [];
@@ -1000,7 +1021,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 			var self_node = history.pop();
 			temp_history.push(self_node);
 			var scene_state = me.scenes.get(self_node.Data() + "").GetState();
-			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 214, className : "visualnovel.VisualNovel", methodName : "Commit"});
+			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 220, className : "visualnovel.VisualNovel", methodName : "Commit"});
 			var fork_node = me.forks.get(self_node.Parent() + "-" + self_node.Data());
 			var _g = 0, _g1 = self_node.Children();
 			while(_g < _g1.length) {
@@ -1022,15 +1043,17 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 	this.commit_callto(fullstate);
 }
 visualnovel.VisualNovel.prototype.Edit = function(flag) {
+	if(!this.p_checkpermission("edit")) return;
 	this.edit_flag = flag != null?flag:!this.edit_flag;
 	this.scenes.get(this.shown_scene.Data() + "").Edit(this.edit_flag);
 	this.p_edittools();
 }
 visualnovel.VisualNovel.prototype.Fork = function(text,cb) {
 	var me = this;
+	if(!this.p_checkpermission("fork")) return;
 	this.fork_callto(function(id) {
 		var scene = new visualnovel.Scene();
-		var scenedata = { layers : [], text : "", id : id, parent_id : me.active_scene.Data(), children_id : [], owner_id : null, fork_text : text, fork_image : null, fork_number : me.active_scene.Children().length};
+		var scenedata = { layers : [], text : "", id : id, parent_id : me.active_scene.Data(), children_id : [], owner_id : me.user_id, fork_text : text, fork_image : null, fork_number : me.active_scene.Children().length};
 		me.active_scene.Branch(id);
 		scene.Load(scenedata);
 		me.scenes.set(id + "",scene);
@@ -1096,12 +1119,33 @@ visualnovel.VisualNovel.prototype.Hide = function(cb) {
 visualnovel.VisualNovel.prototype.Show = function(cb) {
 	buildingblocks.Tile.prototype.Show.call(this,cb);
 	this.scenes.get(this.shown_scene.Data() + "").Show();
-	var $it0 = this.ui.iterator();
+	var $it0 = this.ui.keys();
 	while( $it0.hasNext() ) {
-		var u = $it0.next();
-		u.Show();
+		var key = $it0.next();
+		if(this.p_checkpermission(key)) this.ui.get(key).Show();
 	}
 	this.p_edittools();
+}
+visualnovel.VisualNovel.prototype.p_checkpermission = function(action) {
+	switch(action) {
+	case "save":
+		if(this.permission > 0) return true; else return false;
+		break;
+	case "fork":
+		if(this.permission > 0) return true; else return false;
+		break;
+	case "edit":
+		if(this.permission > 1) return true; else return false;
+		break;
+	case "commit":
+		if(this.permission > 1) return true; else return false;
+		break;
+	case "delete":
+		if(this.permission > 2) return true; else return false;
+		break;
+	default:
+		return false;
+	}
 }
 visualnovel.VisualNovel.prototype.p_prepareforks = function() {
 	var me = this;
@@ -1176,6 +1220,7 @@ visualnovel.VisualNovel.prototype.p_setupui = function() {
 	}
 }
 visualnovel.VisualNovel.prototype.p_edittools = function() {
+	if(!this.p_checkpermission("edit")) return;
 	if(this.edit_flag) {
 		this.tabs.Show();
 		this.ui.get("commit").Show();
@@ -1211,6 +1256,146 @@ Std.random = function(x) {
 	return Math.floor(Math.random() * x);
 }
 Std.prototype.__class__ = Std;
+Lambda = function() { }
+Lambda.__name__ = ["Lambda"];
+Lambda.array = function(it) {
+	var a = new Array();
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var i = $it0.next();
+		a.push(i);
+	}
+	return a;
+}
+Lambda.list = function(it) {
+	var l = new List();
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var i = $it0.next();
+		l.add(i);
+	}
+	return l;
+}
+Lambda.map = function(it,f) {
+	var l = new List();
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(f(x));
+	}
+	return l;
+}
+Lambda.mapi = function(it,f) {
+	var l = new List();
+	var i = 0;
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(f(i++,x));
+	}
+	return l;
+}
+Lambda.has = function(it,elt,cmp) {
+	if(cmp == null) {
+		var $it0 = it.iterator();
+		while( $it0.hasNext() ) {
+			var x = $it0.next();
+			if(x == elt) return true;
+		}
+	} else {
+		var $it1 = it.iterator();
+		while( $it1.hasNext() ) {
+			var x = $it1.next();
+			if(cmp(x,elt)) return true;
+		}
+	}
+	return false;
+}
+Lambda.exists = function(it,f) {
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(f(x)) return true;
+	}
+	return false;
+}
+Lambda.foreach = function(it,f) {
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(!f(x)) return false;
+	}
+	return true;
+}
+Lambda.iter = function(it,f) {
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		f(x);
+	}
+}
+Lambda.filter = function(it,f) {
+	var l = new List();
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(f(x)) l.add(x);
+	}
+	return l;
+}
+Lambda.fold = function(it,f,first) {
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		first = f(x,first);
+	}
+	return first;
+}
+Lambda.count = function(it,pred) {
+	var n = 0;
+	if(pred == null) {
+		var $it0 = it.iterator();
+		while( $it0.hasNext() ) {
+			var _ = $it0.next();
+			n++;
+		}
+	} else {
+		var $it1 = it.iterator();
+		while( $it1.hasNext() ) {
+			var x = $it1.next();
+			if(pred(x)) n++;
+		}
+	}
+	return n;
+}
+Lambda.empty = function(it) {
+	return !it.iterator().hasNext();
+}
+Lambda.indexOf = function(it,v) {
+	var i = 0;
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var v2 = $it0.next();
+		if(v == v2) return i;
+		i++;
+	}
+	return -1;
+}
+Lambda.concat = function(a,b) {
+	var l = new List();
+	var $it0 = a.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(x);
+	}
+	var $it1 = b.iterator();
+	while( $it1.hasNext() ) {
+		var x = $it1.next();
+		l.add(x);
+	}
+	return l;
+}
+Lambda.prototype.__class__ = Lambda;
 List = function(p) {
 	if( p === $_ ) return;
 	this.length = 0;

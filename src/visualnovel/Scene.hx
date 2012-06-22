@@ -95,6 +95,11 @@ class Scene extends Tile {
 			layer.Load(layerdata);
 			this.layers.push(layer);
 		} // for
+		
+		// Step 3: Load the miscellanious information
+		this.storage.id = data.id;
+		this.storage.owner_id = data.owner_id;
+		this.storage.parent_id = data.parent_id;
 	} // Load
 	
 	/****

@@ -38,6 +38,7 @@ class VisualNovel extends Tile {
 	
 	// user permission management
 	private var permission : Int; // permission levels
+	private var user_id : Int;
 	private var edit_flag : Bool; // false = normal, true = edit
 	private var tabs : HorizontalBar; // Control bar
 	private var icon_stockpile : IconsControl; // controls that hold images
@@ -132,8 +133,9 @@ class VisualNovel extends Tile {
 	// 3 = owner
 	// 4 = mod
 	// 5 = admin
-	public function SetupPermission( level : Int ) { 
-		this.permission = level;
+	public function SetupPermission( data : { level : Int, user_id : Int } ) { 
+		this.permission = data.level;
+		this.user_id = data.user_id;
 	} // SetupPermission 
 	
 	public function SetupForking( cb ){ 
@@ -202,7 +204,11 @@ class VisualNovel extends Tile {
 	} // new
 	
 	// Call this function to save the current state to the server
-	public function Commit() { 
+	public function Commit() {
+		// Step -1 : Check permission
+		if ( !this.p_checkpermission( 'commit' ) )
+			return;
+	 
 		// Step 0: Declare variables
 		var lambda_generatestate = function(history : List<TreeNode<Int>>) { 
 			var temp_history = new List<TreeNode<Int>>();
@@ -240,6 +246,10 @@ class VisualNovel extends Tile {
 	
 	// Toggles between regular mode and edit mode
 	public function Edit(?flag : Bool) { 
+		// Checks permission
+		if ( !this.p_checkpermission('edit') ) 
+			return;
+		
 		// Toggle the flag
 		this.edit_flag = flag != null ? flag : !(this.edit_flag);
 		this.scenes.get(this.shown_scene.Data() + "").Edit(this.edit_flag);
@@ -254,6 +264,11 @@ class VisualNovel extends Tile {
 	// New scenes should only be initialized when we get an ID from the server
 	// Notice that this method is in parallel
 	public function Fork(text : String, cb : Scene -> Void ) : Void {
+		// Step 0 : Check permission
+		if ( !this.p_checkpermission( 'fork' ) )
+			return;
+		
+		// Step 1: Fork it
 		this.fork_callto( function( id : Int ) { 
 			var scene = new Scene();
 			var scenedata = { 
@@ -262,7 +277,7 @@ class VisualNovel extends Tile {
 				id : id ,
 				parent_id : this.active_scene.Data() ,
 				children_id : [] ,
-				owner_id : null ,
+				owner_id : this.user_id ,
 				fork_text : text ,
 				fork_image : null ,
 				fork_number : this.active_scene.Children().length
@@ -371,15 +386,56 @@ class VisualNovel extends Tile {
 	public override function Show( ?cb : Void -> Void ) { 
 		super.Show(cb);
 		this.scenes.get( this.shown_scene.Data() + "" ).Show();
-		for( u in this.ui ) { 
-			u.Show();
-		} // for
+		for( key in this.ui.keys() ) {
+			if( this.p_checkpermission(key) )
+				this.ui.get(key).Show();
+		} // for key 
 		this.p_edittools();
 	} // Show
 	
 	/****
 	* Private Operations Section
 	***/
+	// Returns true if allowed, false otherwise
+	// -1 = b& user
+	// 0 = anonymous user
+	// 1 = regular user
+	// 2 = collaborator
+	// 3 = owner
+	// 4 = mod
+	// 5 = admin
+	private function p_checkpermission( action : String ) : Bool { 
+		switch( action ) { 
+			case 'save' : 
+				if ( this.permission > 0 )
+					return true;
+				else
+					return false;
+			case 'fork' :
+				if ( this.permission > 0 )
+					return true;
+				else
+					return false; 
+			case 'edit' :
+				if ( this.permission > 1 )
+					return true;
+				else
+					return false;
+			case 'commit' :
+				if ( this.permission > 1 )
+					return true;
+				else
+					return false;
+			case 'delete' :
+				if ( this.permission > 2 )
+					return true;
+				else
+					return false;
+			default :
+				return false;
+		} // switch
+	} // p_checkpermission
+	
 	// Loads the active_scene's choices and displays them
 	private function p_prepareforks() { 
 		// Step 1: Prepare the forks
@@ -461,7 +517,9 @@ class VisualNovel extends Tile {
 		} // for
 	} // p_setupui
 	
-	private function p_edittools( ) { 
+	private function p_edittools( ) {
+		if ( !this.p_checkpermission("edit") )
+			return; 
 		if( this.edit_flag ) { 
 			this.tabs.Show();
 			this.ui.get("commit").Show();	

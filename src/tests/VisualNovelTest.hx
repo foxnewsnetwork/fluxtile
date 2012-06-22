@@ -8,7 +8,7 @@ class VisualNovelTest {
 		var vn = new VisualNovel();
 		var sd0 = [{
 			layers : [] ,
-			text : null ,
+			text : Random.Text(50) ,
 			id : 1 ,
 			parent_id : null ,
 			children_id : null ,
@@ -34,7 +34,7 @@ class VisualNovelTest {
 			} // for j
 			sd.push( {
 				layers : layers ,
-				text : "Madotsuki scene number " + k ,
+				text : "Madotsuki scene number " + k + Random.Text(50),
 				id : k ,
 				parent_id : null ,
 				children_id : [] ,
@@ -81,6 +81,7 @@ class VisualNovelTest {
 		]; // stockdata
 		vn.SetupStockpile(stockdata);
 		vn.Load(sd0);
+		vn.SetupPermission({ user_id : 12, level : 3 });
 		vn.Start();
 		
 	} // main
