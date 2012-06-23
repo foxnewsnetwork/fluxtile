@@ -1757,27 +1757,29 @@ toolbar.VerticalBar.prototype.__class__ = toolbar.VerticalBar;
 controls.IconsControl = function(p) {
 	if( p === $_ ) return;
 	var me = this;
+	buildingblocks.Tile.call(this);
+	this.lists = [];
 	this.icons = [];
 	this.page = 0;
-	this.ipage = new controls.TextControl();
-	this.ipage.Size({ width : 15.0, height : 15.0});
+	this.ipage = new buildingblocks.Tile();
+	this.ipage.ClassName("iconscontrol-ui iconscontrol-pagename");
 	this.inext = new buildingblocks.Tile();
-	this.inext.Size({ width : 15.0, height : 15.0});
+	this.inext.ClassName("iconscontrol-ui iconscontrol-nextbtn");
 	this.inext.HTML("Next");
 	this.inext.Click(function(e) {
 		me.Next();
 	});
 	this.iprevious = new buildingblocks.Tile();
-	this.iprevious.Size({ width : 15.0, height : 15.0});
+	this.iprevious.ClassName("iconscontrol-ui iconscontrol-prevbtn");
 	this.iprevious.HTML("Previous");
 	this.iprevious.Click(function(e) {
 		me.Previous();
 	});
-	buildingblocks.Tile.call(this);
 }
 controls.IconsControl.__name__ = ["controls","IconsControl"];
 controls.IconsControl.__super__ = buildingblocks.Tile;
 for(var k in buildingblocks.Tile.prototype ) controls.IconsControl.prototype[k] = buildingblocks.Tile.prototype[k];
+controls.IconsControl.prototype.lists = null;
 controls.IconsControl.prototype.icons = null;
 controls.IconsControl.prototype.page = null;
 controls.IconsControl.prototype.ipage = null;
@@ -1786,29 +1788,36 @@ controls.IconsControl.prototype.iprevious = null;
 controls.IconsControl.prototype.AddIcon = function(img,cb) {
 	var me = this;
 	var n = this.icons.length;
-	this.icons.push(new buildingblocks.Tile());
-	this.icons[n].Image(img);
-	this.icons[n].ClassName("iconscontrol-icon iconscontrol-icon-" + n);
-	this.icons[n].Click(function(e) {
+	var icon_html = "<li class='li-iconscontrol-icon iconscontrol-icon-" + n + "'>";
+	icon_html += "<button class='btn-iconscontrol-icon' id='btn-" + controls.IconsControl.NAME + "-" + n + "'>";
+	icon_html += "<img src='" + img + "' class='li-iconscontrol-icon' /></button></li>";
+	if(controls.IconsControl.IconsPerList * this.lists.length <= n) {
+		this.Append("<ul class='iconscontrol-icon-ul' id='ul-" + controls.IconsControl.NAME + "-" + this.lists.length + "'></ul>");
+		this.lists.push(new js.JQuery("#ul-" + controls.IconsControl.NAME + "-" + this.lists.length));
+	}
+	this.lists[this.lists.length - 1].append(icon_html);
+	this.icons.push(new js.JQuery("#btn-" + controls.IconsControl.NAME + "-" + n));
+	this.icons[n].click(function(e) {
 		if(cb != null) cb();
 	});
-	this.icons[n].Mouseover(function(e) {
-		me.icons[n].CSS("border","1px solid red");
-	});
-	this.icons[n].Mouseleave(function(e) {
-		me.icons[n].CSS("border","none");
-	});
+	this.icons[n].mouseover((function(n1) {
+		return function(e) {
+			me.icons[n1].css("border","1px solid red");
+		};
+	})(n));
+	this.icons[n].mouseleave((function(n1) {
+		return function(e) {
+			me.icons[n1].css("border","0px solid red");
+		};
+	})(n));
 }
 controls.IconsControl.prototype.Next = function() {
-	var maxPage = Math.ceil(this.icons.length / controls.IconsControl.IconsPerPage);
-	this.page += 1;
-	this.page %= maxPage;
+	var maxPage = Math.ceil(this.lists.length / controls.IconsControl.ListsPerPage);
+	this.page += this.page < maxPage - 1?1:0;
 	this.p_resize();
 }
 controls.IconsControl.prototype.Previous = function() {
-	var maxPage = Math.ceil(this.icons.length / controls.IconsControl.IconsPerPage);
-	this.page -= 1;
-	this.page = this.page < 0?maxPage:this.page;
+	this.page -= this.page > 0?1:0;
 	this.p_resize();
 }
 controls.IconsControl.prototype.Size = function(siz) {
@@ -1833,37 +1842,30 @@ controls.IconsControl.prototype.Hide = function(cb) {
 	this.inext.Hide();
 	this.iprevious.Hide();
 	this.ipage.Hide();
-	var _g1 = 0, _g = this.icons.length;
-	while(_g1 < _g) {
-		var k = _g1++;
-		this.icons[k].Hide();
+	var _g = 0, _g1 = this.lists;
+	while(_g < _g1.length) {
+		var list = _g1[_g];
+		++_g;
+		list.hide();
 	}
 }
 controls.IconsControl.prototype.p_resize = function() {
 	var s = this.Size();
 	var p = this.Position();
-	var start = this.page * controls.IconsControl.IconsPerPage > this.icons.length?this.icons.length - controls.IconsControl.IconsPerPage:this.page * controls.IconsControl.IconsPerPage;
-	var finish = start + controls.IconsControl.IconsPerPage > this.icons.length?this.icons.length:start + controls.IconsControl.IconsPerPage;
-	var _g1 = 0, _g = this.icons.length;
-	while(_g1 < _g) {
-		var k = _g1++;
-		this.icons[k].Hide();
+	var start = this.page * controls.IconsControl.ListsPerPage;
+	var finish = start + controls.IconsControl.ListsPerPage > this.lists.length?this.lists.length:start + controls.IconsControl.ListsPerPage;
+	var _g = 0, _g1 = this.lists;
+	while(_g < _g1.length) {
+		var list = _g1[_g];
+		++_g;
+		list.hide();
 	}
 	var _g = start;
 	while(_g < finish) {
 		var k = _g++;
-		var j = k - start;
-		var iwidth = s.width / controls.IconsControl.IconsPerLine < 20?10:s.width / controls.IconsControl.IconsPerLine - 10;
-		var iheight = s.height / 2 < 20?10:s.height / 2 - 10;
-		this.icons[k].Size({ width : iwidth, height : iheight});
-		var ix = p.x + iwidth * (j % controls.IconsControl.IconsPerLine) + 15;
-		var iy = p.y + iheight * Math.floor(j / controls.IconsControl.IconsPerLine) + 5;
-		this.icons[k].Position({ x : ix, y : iy});
-		this.icons[k].Show();
+		this.lists[k].show();
 	}
-	this.inext.Position({ x : p.x + s.width, y : p.y});
-	this.iprevious.Position({ x : p.x, y : p.y});
-	this.ipage.Position({ x : p.x + s.width / 2, y : p.y});
+	this.ipage.HTML(this.page + "");
 }
 controls.IconsControl.prototype.__class__ = controls.IconsControl;
 tools.Tooltip = function() { }
@@ -2106,8 +2108,9 @@ tools.Timer.TIME = haxe.Timer.stamp();
 js.Lib.onerror = null;
 toolbar.VerticalBar.NAME = "FFOpenVN-Vertical-Bar-" + tools.Random.Get(10000);
 toolbar.VerticalBar.ID = 0;
-controls.IconsControl.IconsPerLine = 5;
-controls.IconsControl.IconsPerPage = 10;
+controls.IconsControl.ListsPerPage = 2;
+controls.IconsControl.IconsPerList = 5;
+controls.IconsControl.NAME = "FFOpenVN-IconsControl-" + tools.Random.Get(999999);
 tools.Tooltip.HaxeToolTip = new buildingblocks.Tile();
 tools.Tooltip.ID = 0;
 animation.Spotlight.Lights = new animation.BoxHighlighter();

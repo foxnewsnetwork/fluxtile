@@ -1,14 +1,19 @@
 package controls;
 import buildingblocks.Tile;
+import js.JQuery;
+import tools.Random;
 
 // Like the text controller, except holds lots of pictures
 class IconsControl extends Tile {
 	// Constants
-	public static var IconsPerLine = 5;
-	public static var IconsPerPage = 10;
+	public static var ListsPerPage = 2;
+	public static var IconsPerList = 5;
+	public static var NAME = "FFOpenVN-IconsControl-" + Random.Get(999999); 
 	
+	// Tile containers
+	private var lists : Array<JQuery>;
 	// Tiles for pictures
-	private var icons : Array<Tile>;
+	private var icons : Array<JQuery>;
 	// Page tracker
 	private var page : Int;
 	// Page indicator
@@ -19,61 +24,68 @@ class IconsControl extends Tile {
 	private var iprevious : Tile;
 	
 	// Public functions
-	public function new() { 
+	public function new() {
+		super();
+		this.lists = [];
 		this.icons = [];
 		this.page = 0;
-		this.ipage = new TextControl();
-		this.ipage.Size({ width : 15.0, height : 15.0 });
+		this.ipage = new Tile();
+		this.ipage.ClassName("iconscontrol-ui iconscontrol-pagename");
 		this.inext = new Tile();
-		this.inext.Size({ width : 15.0, height : 15.0 });
+		this.inext.ClassName("iconscontrol-ui iconscontrol-nextbtn");
 		this.inext.HTML("Next");
 		this.inext.Click(function(e){ 
 			this.Next();
 		}); // Click
 		this.iprevious = new Tile();
-		this.iprevious.Size({ width : 15.0, height : 15.0 });
+		this.iprevious.ClassName("iconscontrol-ui iconscontrol-prevbtn");
 		this.iprevious.HTML("Previous");
 		this.iprevious.Click(function(e){ 
 			this.Previous();
 		}); // Click
-		super();
+		
 	} // new
 	
 	public function AddIcon( img : String, cb : Void -> Void ) { 
 		// Step 1: Setting up
 		var n = this.icons.length;
-		this.icons.push( new Tile() );
-		this.icons[n].Image(img);
-		
-		// Step 2: Setting class
-		this.icons[n].ClassName("iconscontrol-icon iconscontrol-icon-" + n);
-		
+		var icon_html = "<li class='li-iconscontrol-icon iconscontrol-icon-" + n + "'>";
+		icon_html += "<button class='btn-iconscontrol-icon' id='btn-" + IconsControl.NAME + "-" + n + "'>";
+		icon_html += "<img src='" + img + "' class='li-iconscontrol-icon' /></button></li>";
+		if ( IconsControl.IconsPerList * ( this.lists.length ) <= n ) { 
+			this.Append("<ul class='iconscontrol-icon-ul' id='ul-" + IconsControl.NAME + "-" + this.lists.length + "'></ul>");
+			this.lists.push( new JQuery("#ul-" + IconsControl.NAME + "-" + this.lists.length ) );
+		} // if > max capacity	
+		this.lists[this.lists.length-1].append(icon_html);
+		this.icons.push( new JQuery("#btn-" + IconsControl.NAME + "-" + n) );
+				
 		// Step 3: Setting up callbacks
-		this.icons[n].Click(function(e){
+		this.icons[n].click(function(e){
 			if( cb != null )
 				cb();
 		}); // Click
 		
-		this.icons[n].Mouseover(function(e){ 
-			this.icons[n].CSS("border", "1px solid red");
-		}); // Mouseover
+		this.icons[n].mouseover((function(n) { 
+			return function(e){ 
+				this.icons[n].css("border", "1px solid red");
+			}; // return
+		} )(n) ); // Mouseover
 		
-		this.icons[n].Mouseleave(function(e){
-			this.icons[n].CSS("border", "none");
-		}); // Mouseleave
+		this.icons[n].mouseleave((function(n) { 
+			return function(e){ 
+				this.icons[n].css("border", "0px solid red");
+			}; // return
+		} )(n) ); // Mouseleave
 	} // AddIcon
 	
 	public function Next() : Void { 
-		var maxPage = Math.ceil(this.icons.length / IconsControl.IconsPerPage);
-		this.page += 1;
-		this.page %= maxPage;
+		var maxPage = Math.ceil(this.lists.length / IconsControl.ListsPerPage);
+		this.page += this.page < maxPage - 1 ? 1 : 0; 
 		this.p_resize();
 	} // Next
 	
-	public function Previous() : Void { 
-		var maxPage = Math.ceil(this.icons.length / IconsControl.IconsPerPage); 
-		this.page -= 1;
-		this.page = this.page < 0 ? maxPage : this.page;
+	public function Previous() : Void {  
+		this.page -= this.page > 0 ? 1 : 0;
 		this.p_resize();
 	} // Previous
 	
@@ -107,8 +119,8 @@ class IconsControl extends Tile {
 		this.inext.Hide();
 		this.iprevious.Hide();
 		this.ipage.Hide();
-		for( k in 0...this.icons.length ) { 
-			this.icons[k].Hide();
+		for( list in this.lists ) { 
+			list.hide();
 		} // for
 	} // Hide
 	// private utliity functions
@@ -116,27 +128,25 @@ class IconsControl extends Tile {
 		// Step 1: Set up shortcuts 
 		var s = this.Size();
 		var p = this.Position();
-		var start = this.page * IconsControl.IconsPerPage > this.icons.length ? this.icons.length - IconsControl.IconsPerPage : this.page * IconsControl.IconsPerPage;
-		var finish = start + IconsControl.IconsPerPage > this.icons.length ? this.icons.length : start + IconsControl.IconsPerPage;
+		
+		var start = this.page * IconsControl.ListsPerPage;
+		var finish = start + IconsControl.ListsPerPage > this.lists.length ? this.lists.length : start + IconsControl.ListsPerPage;
 		
 		// Step 2: Move tiles around
-		for( k in 0...this.icons.length ) { 
-			this.icons[k].Hide();
+		for( list in this.lists ) { 
+			list.hide();
 		} // for
 		for( k in start...finish ) {
-			var j = k - start;  
-			var iwidth = s.width / IconsControl.IconsPerLine < 20 ? 10: s.width / IconsControl.IconsPerLine - 10;
-			var iheight = s.height / 2 < 20 ? 10 : s.height / 2 - 10; 
-			this.icons[k].Size({ width : iwidth, height : iheight });
-			var ix = p.x + iwidth * ( j % IconsControl.IconsPerLine ) + 15;
-			var iy = p.y + iheight * Math.floor( j / IconsControl.IconsPerLine ) + 5;
-			this.icons[k].Position({ x : ix, y : iy });
-			this.icons[k].Show();
+			this.lists[k].show();
 		} // for
 		
 		// Step 3: Move the UI
+		this.ipage.HTML(this.page + "");
+		/***
 		this.inext.Position({ x : p.x + s.width, y : p.y });
 		this.iprevious.Position({ x : p.x, y : p.y });
 		this.ipage.Position({ x : p.x + s.width / 2, y : p.y });
+		
+		**/
 	} // p_resize
 } // IconsControl

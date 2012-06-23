@@ -197,6 +197,96 @@ js.Lib.setErrorHandler = function(f) {
 	js.Lib.onerror = f;
 }
 js.Lib.prototype.__class__ = js.Lib;
+if(typeof animation=='undefined') animation = {}
+animation.BoxHighlighter = function(p) {
+	if( p === $_ ) return;
+	this.edges = [];
+	this.position = { x : 0.0, y : 0.0};
+	this.size = { width : 0.0, height : 0.0};
+	var _g = 0;
+	while(_g < 2) {
+		var k = _g++;
+		var _g1 = 0;
+		while(_g1 < 2) {
+			var j = _g1++;
+			this.edges.push(new buildingblocks.Tile());
+			this.edges[2 * k + j].CSS("background-color","rgb(185,200,200)");
+			this.edges[2 * k + j].CSS("border","1px solid yellow");
+			this.edges[2 * k + j].CSS("z-index","9990");
+		}
+	}
+}
+animation.BoxHighlighter.__name__ = ["animation","BoxHighlighter"];
+animation.BoxHighlighter.prototype.edges = null;
+animation.BoxHighlighter.prototype.position = null;
+animation.BoxHighlighter.prototype.size = null;
+animation.BoxHighlighter.prototype.Position = function(pos) {
+	if(pos != null) {
+		this.position = pos;
+		this.edges[0].Position(pos);
+		this.edges[1].Position(pos);
+		this.edges[2].Position({ x : pos.x + this.Size().width, y : pos.y});
+		this.edges[3].Position({ x : pos.x, y : pos.y + this.Size().height});
+	}
+	return this.position;
+}
+animation.BoxHighlighter.prototype.Size = function(siz) {
+	if(siz != null) {
+		this.size = siz;
+		this.edges[0].Size({ width : 1.0, height : siz.height});
+		this.edges[1].Size({ width : siz.width, height : 1.0});
+		this.edges[2].Size({ width : 1.0, height : siz.height});
+		this.edges[2].Position({ x : this.Position().x + siz.width, y : this.Position().y});
+		this.edges[3].Size({ width : siz.width, height : 1.0});
+		this.edges[3].Position({ x : this.Position().x, y : this.Position().y + siz.height});
+	}
+	return this.size;
+}
+animation.BoxHighlighter.prototype.Show = function() {
+	var _g1 = 0, _g = this.edges.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.edges[k].Show();
+	}
+}
+animation.BoxHighlighter.prototype.Hide = function() {
+	var _g1 = 0, _g = this.edges.length;
+	while(_g1 < _g) {
+		var k = _g1++;
+		this.edges[k].Hide();
+	}
+}
+animation.BoxHighlighter.prototype.__class__ = animation.BoxHighlighter;
+animation.Spotlight = function(p) {
+	if( p === $_ ) return;
+	var me = this;
+	this.highlighter = new animation.BoxHighlighter();
+	this.mouse = { x : 0.0, y : 0.0};
+	new js.JQuery("body").mousemove(function(e) {
+		me.mouse.x = e.pageX + 0.0;
+		me.mouse.y = e.pageY + 0.0;
+	});
+}
+animation.Spotlight.__name__ = ["animation","Spotlight"];
+animation.Spotlight.Shine = function(size,pos) {
+	animation.Spotlight.Lights.Size(size);
+	animation.Spotlight.Lights.Position(pos);
+	animation.Spotlight.Lights.Show();
+}
+animation.Spotlight.Die = function() {
+	animation.Spotlight.Lights.Hide();
+}
+animation.Spotlight.prototype.highlighter = null;
+animation.Spotlight.prototype.mouse = null;
+animation.Spotlight.prototype.On = function(size,pos) {
+	this.highlighter.Size(size);
+	if(pos != null) this.highlighter.Position(pos); else this.highlighter.Position({ x : this.mouse.x - size.width / 2, y : this.mouse.y - size.height / 2});
+	this.highlighter.Show();
+}
+animation.Spotlight.prototype.Off = function() {
+	this.highlighter.Hide();
+}
+animation.Spotlight.prototype.__class__ = animation.Spotlight;
 if(typeof haxe=='undefined') haxe = {}
 haxe.Log = function() { }
 haxe.Log.__name__ = ["haxe","Log"];
@@ -239,6 +329,146 @@ Std.random = function(x) {
 	return Math.floor(Math.random() * x);
 }
 Std.prototype.__class__ = Std;
+Lambda = function() { }
+Lambda.__name__ = ["Lambda"];
+Lambda.array = function(it) {
+	var a = new Array();
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var i = $it0.next();
+		a.push(i);
+	}
+	return a;
+}
+Lambda.list = function(it) {
+	var l = new List();
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var i = $it0.next();
+		l.add(i);
+	}
+	return l;
+}
+Lambda.map = function(it,f) {
+	var l = new List();
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(f(x));
+	}
+	return l;
+}
+Lambda.mapi = function(it,f) {
+	var l = new List();
+	var i = 0;
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(f(i++,x));
+	}
+	return l;
+}
+Lambda.has = function(it,elt,cmp) {
+	if(cmp == null) {
+		var $it0 = it.iterator();
+		while( $it0.hasNext() ) {
+			var x = $it0.next();
+			if(x == elt) return true;
+		}
+	} else {
+		var $it1 = it.iterator();
+		while( $it1.hasNext() ) {
+			var x = $it1.next();
+			if(cmp(x,elt)) return true;
+		}
+	}
+	return false;
+}
+Lambda.exists = function(it,f) {
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(f(x)) return true;
+	}
+	return false;
+}
+Lambda.foreach = function(it,f) {
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(!f(x)) return false;
+	}
+	return true;
+}
+Lambda.iter = function(it,f) {
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		f(x);
+	}
+}
+Lambda.filter = function(it,f) {
+	var l = new List();
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		if(f(x)) l.add(x);
+	}
+	return l;
+}
+Lambda.fold = function(it,f,first) {
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		first = f(x,first);
+	}
+	return first;
+}
+Lambda.count = function(it,pred) {
+	var n = 0;
+	if(pred == null) {
+		var $it0 = it.iterator();
+		while( $it0.hasNext() ) {
+			var _ = $it0.next();
+			n++;
+		}
+	} else {
+		var $it1 = it.iterator();
+		while( $it1.hasNext() ) {
+			var x = $it1.next();
+			if(pred(x)) n++;
+		}
+	}
+	return n;
+}
+Lambda.empty = function(it) {
+	return !it.iterator().hasNext();
+}
+Lambda.indexOf = function(it,v) {
+	var i = 0;
+	var $it0 = it.iterator();
+	while( $it0.hasNext() ) {
+		var v2 = $it0.next();
+		if(v == v2) return i;
+		i++;
+	}
+	return -1;
+}
+Lambda.concat = function(a,b) {
+	var l = new List();
+	var $it0 = a.iterator();
+	while( $it0.hasNext() ) {
+		var x = $it0.next();
+		l.add(x);
+	}
+	var $it1 = b.iterator();
+	while( $it1.hasNext() ) {
+		var x = $it1.next();
+		l.add(x);
+	}
+	return l;
+}
+Lambda.prototype.__class__ = Lambda;
 haxe.Timer = function(time_ms) {
 	if( time_ms === $_ ) return;
 	var arr = haxe_timers;
@@ -294,13 +524,35 @@ tools.Timer.Stop = function() {
 	return difference;
 }
 tools.Timer.prototype.__class__ = tools.Timer;
+tools.Random = function() { }
+tools.Random.__name__ = ["tools","Random"];
+tools.Random.Get = function(upper_cap) {
+	var cap = 100;
+	if(upper_cap != null) cap = upper_cap;
+	return Math.floor(Math.random() * cap);
+}
+tools.Random.Text = function(len) {
+	var l = 100;
+	if(len != null) l = len;
+	var alphabet = ["a","b","c","d","e","f","g","h","i","j","k","l","%","m","n","o","p","q","r","s","t","u","v","w","x","y","z"];
+	var rand_arr = [];
+	var $it0 = new IntIter(0,l);
+	while( $it0.hasNext() ) {
+		var k = $it0.next();
+		rand_arr.push(tools.Random.Get(alphabet.length));
+	}
+	return Lambda.map(rand_arr,function(n) {
+		return alphabet[n];
+	}).join("");
+}
+tools.Random.prototype.__class__ = tools.Random;
 if(typeof buildingblocks=='undefined') buildingblocks = {}
 buildingblocks.Element = function(p) {
 	if( p === $_ ) return;
 	this.hides = [];
 	this.shows = [];
-	this.position = { x : 0.0, y : 0.0};
-	this.size = { width : 75.0, height : 75.0};
+	this.position = { x : null, y : null};
+	this.size = { width : null, height : null};
 	this.domBody = new js.JQuery("body");
 	this.parent = this.domBody;
 	this.domBody.append("<div id='" + buildingblocks.Element.NAME + "-" + buildingblocks.Element.ID + "'></div>");
@@ -323,13 +575,26 @@ buildingblocks.Element.prototype.shows = null;
 buildingblocks.Element.prototype.parent = null;
 buildingblocks.Element.prototype.timer = null;
 buildingblocks.Element.prototype.bgcolor = null;
+buildingblocks.Element.prototype.class_name = null;
+buildingblocks.Element.prototype.ClassName = function(cn) {
+	if(cn != null) {
+		this.domContainer.removeClass(this.class_name).addClass(cn);
+		this.class_name = cn;
+	}
+	return this.class_name;
+}
 buildingblocks.Element.prototype.TypePosition = function(type) {
 	if(type != null) this.type_position = type;
 	return this.type_position;
 }
 buildingblocks.Element.prototype.Position = function(pos) {
-	buildingblocks.Element.TestCounter++;
-	if(pos == null) return this.position;
+	if(pos == null) {
+		if(this.position.x == null || this.position.y == null) {
+			this.position.x = this.domContainer.position().left + 0.0;
+			this.position.y = this.domContainer.position().top + 0.0;
+		}
+		return this.position;
+	}
 	this.position = pos;
 	var x = this.position.x;
 	var y = this.position.y;
@@ -342,7 +607,13 @@ buildingblocks.Element.prototype.TypeSize = function(type) {
 	return this.type_size;
 }
 buildingblocks.Element.prototype.Size = function(siz) {
-	if(siz == null) return this.size;
+	if(siz == null) {
+		if(this.size.height == null || this.size.width == null) {
+			this.size.width = this.domContainer.width() + 0.0;
+			this.size.height = this.domContainer.height() + 0.0;
+		}
+		return this.size;
+	}
 	this.size = siz;
 	this.domContainer.css("width",this.size.width + this.type_size);
 	this.domContainer.css("height",this.size.height + this.type_size);
@@ -354,7 +625,7 @@ buildingblocks.Element.prototype.Remove = function() {
 	this.domContainer.remove();
 }
 buildingblocks.Element.prototype.Hide = function(cb) {
-	if(cb == null) this.domContainer.hide(50,(function(element) {
+	if(cb == null) this.domContainer.hide(25,(function(element) {
 		return function() {
 			var _g1 = 0, _g = element.hides.length;
 			while(_g1 < _g) {
@@ -365,7 +636,7 @@ buildingblocks.Element.prototype.Hide = function(cb) {
 	})(this)); else this.hides.push(cb);
 }
 buildingblocks.Element.prototype.Show = function(cb) {
-	if(cb == null) this.domContainer.show(50,(function(element) {
+	if(cb == null) this.domContainer.show(25,(function(element) {
 		return function() {
 			var _g1 = 0, _g = element.shows.length;
 			while(_g1 < _g) {
@@ -384,6 +655,12 @@ buildingblocks.Element.prototype.HTML = function(html) {
 	this.domContainer.html(html);
 	return html;
 }
+buildingblocks.Element.prototype.Append = function(html) {
+	this.domContainer.append(html);
+}
+buildingblocks.Element.prototype.Prepend = function(html) {
+	this.domContainer.prepend(html);
+}
 buildingblocks.Element.prototype.__class__ = buildingblocks.Element;
 buildingblocks.Tile = function(p) {
 	if( p === $_ ) return;
@@ -393,6 +670,8 @@ buildingblocks.Tile = function(p) {
 	this.mouseleaves = [];
 	buildingblocks.Element.call(this);
 	this.CSS("z-index","968");
+	buildingblocks.Tile.ID += 1;
+	this.edit_mode_initialized_flag = false;
 }
 buildingblocks.Tile.__name__ = ["buildingblocks","Tile"];
 buildingblocks.Tile.__super__ = buildingblocks.Element;
@@ -403,6 +682,7 @@ buildingblocks.Tile.prototype.mouseovers = null;
 buildingblocks.Tile.prototype.mouseleaves = null;
 buildingblocks.Tile.prototype.mode = null;
 buildingblocks.Tile.prototype.stats = null;
+buildingblocks.Tile.prototype.edit_mode_initialized_flag = null;
 buildingblocks.Tile.prototype.Stats = function() {
 	return this.stats;
 }
@@ -415,7 +695,15 @@ buildingblocks.Tile.prototype.Image = function(url) {
 	if(url == null) return this.image; else if(this.image == url) return this.image;
 	this.image = url;
 	this.CSS("background-image","url('" + url + "')");
+	this.Size(this.NaturalSize());
 	return this.image;
+}
+buildingblocks.Tile.prototype.NaturalSize = function() {
+	this.domBody.append("<img id='tile-natural-size-finder-" + buildingblocks.Tile.ID + "' src='" + this.image + "' style='position : absolute;'/>");
+	var j = new js.JQuery("#tile-natural-size-finder-" + buildingblocks.Tile.ID);
+	var s = { width : j.width() + 0.0, height : j.height() + 0.0};
+	j.replaceWith("");
+	return s;
 }
 buildingblocks.Tile.prototype.Mode = function(m) {
 	if(m != null) {
@@ -481,16 +769,41 @@ buildingblocks.Tile.prototype.Mouseleave = function(cb) {
 		})(this));
 	}
 }
+buildingblocks.Tile.prototype.Hide = function(cb) {
+	buildingblocks.Element.prototype.Hide.call(this,cb);
+	if(buildingblocks.Tile.SelectedTile == this) animation.Spotlight.Die();
+}
 buildingblocks.Tile.prototype.p_EditMode = function() {
 	var me = this;
-	this.Mouseover(function(e) {
-		me.CSS("border","2px solid blue");
+	if(this.edit_mode_initialized_flag) return;
+	this.domContainer.bind("click",function(e) {
+		if(buildingblocks.Tile.SelectedTile != me) {
+			buildingblocks.Tile.SelectedTile = me;
+			animation.Spotlight.Shine(me.Size(),me.Position());
+		}
 	});
-	this.Mouseleave(function(e) {
-		me.CSS("border","none");
+	var altdownflag = false;
+	this.domContainer.bind("mouseover",function(e) {
+		if(me.mode != 1) return;
+		if(buildingblocks.Tile.SelectedTile == me) {
+			if(altdownflag) tools.Tooltip.Show("Resize Mode (Press SPACE to toggle mode)"); else tools.Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+		} else tools.Tooltip.Show("Click to select");
+	});
+	this.domContainer.bind("mouseleave",function(e) {
+		if(me.mode != 1) return;
+		tools.Tooltip.Hide();
 	});
 	var mousedownflag = false, xdiff = 0.0, ydiff = 0.0;
+	this.domBody.keypress(function(e) {
+		if(me.mode != 1) return;
+		if(e.keyCode == 32) {
+			altdownflag = !altdownflag;
+			if(altdownflag) tools.Tooltip.Show("Resize Mode (Press SPACE to toggle mode)"); else tools.Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+		}
+	});
 	this.domContainer.mousedown(function(e) {
+		if(me.mode != 1) return;
+		if(buildingblocks.Tile.SelectedTile != me) return;
 		mousedownflag = true;
 		var body = me.domBody;
 		if(me.type_position == "%") {
@@ -504,26 +817,37 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 		}
 	});
 	this.domContainer.mousemove(function(e) {
-		if(mousedownflag) {
-			var dx = xdiff, dy = ydiff;
-			var document = me.domBody;
-			var mouseX, mouseY;
-			if(me.type_position == "%") {
-				mouseX = 100 * e.pageX / document.width();
-				mouseY = 100 * e.pageY / document.height();
-			} else {
-				mouseX = e.pageX;
-				mouseY = e.pageY;
-			}
-			me.Position({ x : mouseX - dx, y : mouseY - dy});
+		if(me.mode != 1) return;
+		if(buildingblocks.Tile.SelectedTile != me) return;
+		var topleft = me.Position();
+		var dx = xdiff, dy = ydiff;
+		var document = me.domBody;
+		var mouseX, mouseY;
+		if(me.type_position == "%") {
+			mouseX = 100 * e.pageX / document.width();
+			mouseY = 100 * e.pageY / document.height();
+		} else {
+			mouseX = e.pageX;
+			mouseY = e.pageY;
 		}
+		if(mousedownflag && altdownflag) {
+			var w = mouseX < topleft.x?10.0:mouseX - topleft.x + 10.0;
+			var h = mouseY < topleft.y?10.0:mouseY - topleft.y + 10.0;
+			me.Size({ width : w, height : h});
+		} else if(mousedownflag) me.Position({ x : mouseX - dx, y : mouseY - dy});
+		animation.Spotlight.Shine(me.Size(),me.Position());
 		return;
 	});
 	this.domContainer.mouseup(function(e) {
+		if(me.mode != 1) return;
+		if(buildingblocks.Tile.SelectedTile != me) return;
 		mousedownflag = false;
 	});
+	this.edit_mode_initialized_flag = true;
 }
 buildingblocks.Tile.prototype.p_NormalMode = function() {
+	animation.Spotlight.Die();
+	tools.Tooltip.Hide();
 }
 buildingblocks.Tile.prototype.__class__ = buildingblocks.Tile;
 buildingblocks.Tile.__interfaces__ = [statistics.Statistics];
@@ -531,27 +855,29 @@ if(typeof controls=='undefined') controls = {}
 controls.IconsControl = function(p) {
 	if( p === $_ ) return;
 	var me = this;
+	buildingblocks.Tile.call(this);
+	this.lists = [];
 	this.icons = [];
 	this.page = 0;
-	this.ipage = new controls.TextControl();
-	this.ipage.Size({ width : 15.0, height : 15.0});
+	this.ipage = new buildingblocks.Tile();
+	this.ipage.ClassName("iconscontrol-pagename");
 	this.inext = new buildingblocks.Tile();
-	this.inext.Size({ width : 15.0, height : 15.0});
+	this.inext.ClassName("iconscontrol-nextbtn");
 	this.inext.HTML("Next");
 	this.inext.Click(function(e) {
 		me.Next();
 	});
 	this.iprevious = new buildingblocks.Tile();
-	this.iprevious.Size({ width : 15.0, height : 15.0});
+	this.iprevious.ClassName("iconscontrol-prevbtn");
 	this.iprevious.HTML("Previous");
 	this.iprevious.Click(function(e) {
 		me.Previous();
 	});
-	buildingblocks.Tile.call(this);
 }
 controls.IconsControl.__name__ = ["controls","IconsControl"];
 controls.IconsControl.__super__ = buildingblocks.Tile;
 for(var k in buildingblocks.Tile.prototype ) controls.IconsControl.prototype[k] = buildingblocks.Tile.prototype[k];
+controls.IconsControl.prototype.lists = null;
 controls.IconsControl.prototype.icons = null;
 controls.IconsControl.prototype.page = null;
 controls.IconsControl.prototype.ipage = null;
@@ -560,28 +886,36 @@ controls.IconsControl.prototype.iprevious = null;
 controls.IconsControl.prototype.AddIcon = function(img,cb) {
 	var me = this;
 	var n = this.icons.length;
-	this.icons.push(new buildingblocks.Tile());
-	this.icons[n].Image(img);
-	this.icons[n].Click(function(e) {
+	var icon_html = "<li class='li-iconscontrol-icon iconscontrol-icon-" + n + "'>";
+	icon_html += "<button class='btn-iconscontrol-icon' id='btn-" + controls.IconsControl.NAME + "-" + n + "'>";
+	icon_html += "<img src='" + img + "' class='li-iconscontrol-icon' /></button></li>";
+	if(controls.IconsControl.IconsPerList * this.lists.length <= n) {
+		this.Append("<ul class='iconscontrol-icon-ul' id='ul-" + controls.IconsControl.NAME + "-" + this.lists.length + "'></ul>");
+		this.lists.push(new js.JQuery("#ul-" + controls.IconsControl.NAME + "-" + this.lists.length));
+	}
+	this.lists[this.lists.length - 1].append(icon_html);
+	this.icons.push(new js.JQuery("#btn-" + controls.IconsControl.NAME + "-" + n));
+	this.icons[n].click(function(e) {
 		if(cb != null) cb();
 	});
-	this.icons[n].Mouseover(function(e) {
-		me.icons[n].CSS("border","1px solid red");
-	});
-	this.icons[n].Mouseleave(function(e) {
-		me.icons[n].CSS("border","none");
-	});
+	this.icons[n].mouseover((function(n1) {
+		return function(e) {
+			me.icons[n1].css("border","1px solid red");
+		};
+	})(n));
+	this.icons[n].mouseleave((function(n1) {
+		return function(e) {
+			me.icons[n1].css("border","0px solid red");
+		};
+	})(n));
 }
 controls.IconsControl.prototype.Next = function() {
-	var maxPage = Math.ceil(this.icons.length / controls.IconsControl.IconsPerPage);
-	this.page += 1;
-	this.page %= maxPage;
+	var maxPage = Math.ceil(this.lists.length / controls.IconsControl.ListsPerPage);
+	this.page += this.page < maxPage - 1?1:0;
 	this.p_resize();
 }
 controls.IconsControl.prototype.Previous = function() {
-	var maxPage = Math.ceil(this.icons.length / controls.IconsControl.IconsPerPage);
-	this.page -= 1;
-	this.page = this.page < 0?maxPage:this.page;
+	this.page -= this.page > 0?1:0;
 	this.p_resize();
 }
 controls.IconsControl.prototype.Size = function(siz) {
@@ -606,82 +940,199 @@ controls.IconsControl.prototype.Hide = function(cb) {
 	this.inext.Hide();
 	this.iprevious.Hide();
 	this.ipage.Hide();
-	var _g1 = 0, _g = this.icons.length;
-	while(_g1 < _g) {
-		var k = _g1++;
-		this.icons[k].Hide();
+	var _g = 0, _g1 = this.lists;
+	while(_g < _g1.length) {
+		var list = _g1[_g];
+		++_g;
+		list.hide();
 	}
 }
 controls.IconsControl.prototype.p_resize = function() {
 	var s = this.Size();
 	var p = this.Position();
-	var start = this.page * controls.IconsControl.IconsPerPage > this.icons.length?this.icons.length - controls.IconsControl.IconsPerPage:this.page * controls.IconsControl.IconsPerPage;
-	var finish = start + controls.IconsControl.IconsPerPage > this.icons.length?this.icons.length:start + controls.IconsControl.IconsPerPage;
-	var _g1 = 0, _g = this.icons.length;
-	while(_g1 < _g) {
-		var k = _g1++;
-		this.icons[k].Hide();
+	var start = this.page * controls.IconsControl.ListsPerPage;
+	var finish = start + controls.IconsControl.ListsPerPage > this.lists.length?this.lists.length:start + controls.IconsControl.ListsPerPage;
+	var _g = 0, _g1 = this.lists;
+	while(_g < _g1.length) {
+		var list = _g1[_g];
+		++_g;
+		list.hide();
 	}
 	var _g = start;
 	while(_g < finish) {
 		var k = _g++;
-		var j = k - start;
-		var iwidth = s.width / controls.IconsControl.IconsPerLine < 20?10:s.width / controls.IconsControl.IconsPerLine - 10;
-		var iheight = s.height / 2 < 20?10:s.height / 2 - 10;
-		this.icons[k].Size({ width : iwidth, height : iheight});
-		var ix = p.x + iwidth * (j % controls.IconsControl.IconsPerLine) + 15;
-		var iy = p.y + iheight * Math.floor(j / controls.IconsControl.IconsPerLine) + 5;
-		this.icons[k].Position({ x : ix, y : iy});
-		this.icons[k].Show();
+		this.lists[k].show();
 	}
 	this.inext.Position({ x : p.x + s.width, y : p.y});
 	this.iprevious.Position({ x : p.x, y : p.y});
 	this.ipage.Position({ x : p.x + s.width / 2, y : p.y});
+	this.ipage.HTML(this.page + "");
 }
 controls.IconsControl.prototype.__class__ = controls.IconsControl;
-controls.TextControl = function(p) {
+List = function(p) {
 	if( p === $_ ) return;
-	this.text = "";
-	this.backlight = new buildingblocks.Tile();
-	this.backlight.CSS("background-color","rgb(250,250,250)");
-	this.backlight.CSS("opacity","0.85");
-	buildingblocks.Tile.call(this);
+	this.length = 0;
 }
-controls.TextControl.__name__ = ["controls","TextControl"];
-controls.TextControl.__super__ = buildingblocks.Tile;
-for(var k in buildingblocks.Tile.prototype ) controls.TextControl.prototype[k] = buildingblocks.Tile.prototype[k];
-controls.TextControl.prototype.text = null;
-controls.TextControl.prototype.backlight = null;
-controls.TextControl.prototype.Text = function(txt) {
-	if(txt != null) {
-		this.text = txt;
-		this.HTML("<p class=\"textcontrol\">" + this.text + "</p>");
+List.__name__ = ["List"];
+List.prototype.h = null;
+List.prototype.q = null;
+List.prototype.length = null;
+List.prototype.add = function(item) {
+	var x = [item];
+	if(this.h == null) this.h = x; else this.q[1] = x;
+	this.q = x;
+	this.length++;
+}
+List.prototype.push = function(item) {
+	var x = [item,this.h];
+	this.h = x;
+	if(this.q == null) this.q = x;
+	this.length++;
+}
+List.prototype.first = function() {
+	return this.h == null?null:this.h[0];
+}
+List.prototype.last = function() {
+	return this.q == null?null:this.q[0];
+}
+List.prototype.pop = function() {
+	if(this.h == null) return null;
+	var x = this.h[0];
+	this.h = this.h[1];
+	if(this.h == null) this.q = null;
+	this.length--;
+	return x;
+}
+List.prototype.isEmpty = function() {
+	return this.h == null;
+}
+List.prototype.clear = function() {
+	this.h = null;
+	this.q = null;
+	this.length = 0;
+}
+List.prototype.remove = function(v) {
+	var prev = null;
+	var l = this.h;
+	while(l != null) {
+		if(l[0] == v) {
+			if(prev == null) this.h = l[1]; else prev[1] = l[1];
+			if(this.q == l) this.q = prev;
+			this.length--;
+			return true;
+		}
+		prev = l;
+		l = l[1];
 	}
-	return this.text;
+	return false;
 }
-controls.TextControl.prototype.Size = function(siz) {
-	buildingblocks.Tile.prototype.Size.call(this,siz);
-	return this.backlight.Size(siz);
+List.prototype.iterator = function() {
+	return { h : this.h, hasNext : function() {
+		return this.h != null;
+	}, next : function() {
+		if(this.h == null) return null;
+		var x = this.h[0];
+		this.h = this.h[1];
+		return x;
+	}};
 }
-controls.TextControl.prototype.Position = function(pos) {
-	buildingblocks.Tile.prototype.Position.call(this,pos);
-	return this.backlight.Position(pos);
+List.prototype.toString = function() {
+	var s = new StringBuf();
+	var first = true;
+	var l = this.h;
+	s.b[s.b.length] = "{" == null?"null":"{";
+	while(l != null) {
+		if(first) first = false; else s.b[s.b.length] = ", " == null?"null":", ";
+		s.add(Std.string(l[0]));
+		l = l[1];
+	}
+	s.b[s.b.length] = "}" == null?"null":"}";
+	return s.b.join("");
 }
-controls.TextControl.prototype.__class__ = controls.TextControl;
+List.prototype.join = function(sep) {
+	var s = new StringBuf();
+	var first = true;
+	var l = this.h;
+	while(l != null) {
+		if(first) first = false; else s.b[s.b.length] = sep == null?"null":sep;
+		s.add(l[0]);
+		l = l[1];
+	}
+	return s.b.join("");
+}
+List.prototype.filter = function(f) {
+	var l2 = new List();
+	var l = this.h;
+	while(l != null) {
+		var v = l[0];
+		l = l[1];
+		if(f(v)) l2.add(v);
+	}
+	return l2;
+}
+List.prototype.map = function(f) {
+	var b = new List();
+	var l = this.h;
+	while(l != null) {
+		var v = l[0];
+		l = l[1];
+		b.add(f(v));
+	}
+	return b;
+}
+List.prototype.__class__ = List;
+tools.Tooltip = function() { }
+tools.Tooltip.__name__ = ["tools","Tooltip"];
+tools.Tooltip.Show = function(html) {
+	var t = tools.Tooltip.HaxeToolTip;
+	t.Show();
+	if(tools.Tooltip.ID > 0) t.HTML(html); else {
+		t.ClassName("haxetooltip");
+		t.HTML(html);
+		t.CSS("z-index","9999");
+		new js.JQuery("body").mousemove(function(e) {
+			var posX = e.pageX + 15.0;
+			var posY = e.pageY + 20.0;
+			t.Position({ x : posX, y : posY});
+		});
+		tools.Tooltip.ID += 1;
+	}
+}
+tools.Tooltip.Hide = function() {
+	tools.Tooltip.HaxeToolTip.Hide();
+}
+tools.Tooltip.prototype.__class__ = tools.Tooltip;
+StringBuf = function(p) {
+	if( p === $_ ) return;
+	this.b = new Array();
+}
+StringBuf.__name__ = ["StringBuf"];
+StringBuf.prototype.add = function(x) {
+	this.b[this.b.length] = x == null?"null":x;
+}
+StringBuf.prototype.addSub = function(s,pos,len) {
+	this.b[this.b.length] = s.substr(pos,len);
+}
+StringBuf.prototype.addChar = function(c) {
+	this.b[this.b.length] = String.fromCharCode(c);
+}
+StringBuf.prototype.toString = function() {
+	return this.b.join("");
+}
+StringBuf.prototype.b = null;
+StringBuf.prototype.__class__ = StringBuf;
 if(typeof tests=='undefined') tests = {}
 tests.IconsControlTest = function() { }
 tests.IconsControlTest.__name__ = ["tests","IconsControlTest"];
 tests.IconsControlTest.main = function() {
 	var ic = new controls.IconsControl();
 	var _g = 0;
-	while(_g < 45) {
+	while(_g < 48) {
 		var k = _g++;
 		ic.AddIcon("madotsuki.png",function() {
 			js.Lib.alert("Madotsuki");
 		});
 	}
-	ic.Size({ width : 550.0, height : 300.0});
-	ic.Position({ x : 0.0, y : 150.0});
 	ic.CSS("border","1px solid blue");
 	ic.Show();
 }
@@ -818,10 +1269,16 @@ if(typeof(haxe_timers) == "undefined") haxe_timers = [];
 	};
 }
 js.Lib.onerror = null;
+animation.Spotlight.Lights = new animation.BoxHighlighter();
 tools.Timer.TIME = haxe.Timer.stamp();
 buildingblocks.Element.ID = 0;
 buildingblocks.Element.NAME = "FFOpenVN-Tile-Element-" + Math.floor(10000 * Math.random());
 buildingblocks.Element.TestCounter = 0;
-controls.IconsControl.IconsPerLine = 5;
-controls.IconsControl.IconsPerPage = 10;
+buildingblocks.Tile.ID = 0;
+buildingblocks.Tile.SelectedTile = new buildingblocks.Tile();
+controls.IconsControl.ListsPerPage = 2;
+controls.IconsControl.IconsPerList = 5;
+controls.IconsControl.NAME = "FFOpenVN-IconsControl-" + tools.Random.Get(999999);
+tools.Tooltip.HaxeToolTip = new buildingblocks.Tile();
+tools.Tooltip.ID = 0;
 tests.IconsControlTest.main()

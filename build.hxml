@@ -20,8 +20,8 @@
  #-js out/fluxtile-scene.js
  #-main tests.SceneTest
 
-#  -js out/fluxtile-iconscontrol.js
-#  -main tests.IconsControlTest
+  #-js out/fluxtile-iconscontrol.js
+  #-main tests.IconsControlTest
  
  # -js out/fluxtile-textcontrol.js
  # -main tests.TextControlTest
