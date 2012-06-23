@@ -7,6 +7,9 @@ class Tooltip {
 	public static var HaxeToolTip : Tile = new Tile();
 	public static var ID : Int = 0;
 
+	public static function Append( html : String ) : Void { 
+		Tooltip.HaxeToolTip.Append(html);
+	} // Append
 	public static function Show( html : String ) : Void { 
 		var t : Tile = Tooltip.HaxeToolTip;
 		t.Show();

@@ -9,7 +9,7 @@ class Scene extends Tile {
 	* Private members
 	***/
 	private var text : TextControl;
-	private var layers : Array<Layer>;
+	private var layers : Hash<Layer>;
 	private var edit_flag : Bool;
 	
 	private var storage : { id : Int, owner_id : Int, parent_id : Int };
@@ -21,22 +21,27 @@ class Scene extends Tile {
 		super();
 		this.text = new TextControl();
 		this.text.ClassName("scene-text textbox");
-		this.layers = [];
+		this.layers = new Hash<Layer>();
 		this.edit_flag = false;
 		this.storage = { id : null, owner_id : null, parent_id : null };
 	} // new
 	
 	public function AddLayer( data : LayerData ) { 
-		var layer = new Layer();
-		layer.Load(data);
-		layer.Mode(1);
-		this.layers.push(layer);
-		layer.Show();
+		var lay = new Layer();
+		lay.Load(data);
+		lay.Mode(1);
+		lay.Delete(function() { 
+			this.RemoveLayer(lay);
+		}); // delete callback
+		this.layers.set(lay.LayerId(), lay);
+		lay.Show();
 	} // AddLayer
 	
 	public function RemoveLayer(layer : Layer) { 
-		if (this.layers.remove(layer))
+		if (this.layers.remove(layer.LayerId())) {
 			layer.Hide();
+			trace("removed layer");
+		} // if 
 		else
 			throw "Tile remove problem";
 	} // RemoveLayer
@@ -89,11 +94,17 @@ class Scene extends Tile {
 		this.text.Text(data.text);
 		
 		// Step 2: Load the tiles
-		this.layers = [];
+		this.layers = new Hash<Layer>();
 		for( layerdata in data.layers ) { 
 			var layer = new Layer();
 			layer.Load(layerdata);
-			this.layers.push(layer);
+			layer.Delete((function(l : Layer){
+				return function() {
+					trace("almost to deleting"); 
+					this.RemoveLayer(l);
+				}; // return
+			})(layer)); // delete callback
+			this.layers.set(layer.LayerId(), layer);
 		} // for
 		
 		// Step 3: Load the miscellanious information
@@ -107,16 +118,16 @@ class Scene extends Tile {
 	***/
 	public override function Show(?cb : Void -> Void) : Void {
 		super.Show(cb);
-		for( k in 0...this.layers.length ){ 
-			this.layers[k].Show();
+		for( key in this.layers.keys() ) { 
+			this.layers.get(key).Show();
 		} // for
 		this.text.Show();
 	} // Show
 	
 	public override function Hide(?cb : Void -> Void) : Void {
 		super.Hide(cb);
-		for( k in 0...this.layers.length ){ 
-			this.layers[k].Hide();
+		for( key in this.layers.keys() ) { 
+			this.layers.get(key).Hide();
 		} // for
 		this.text.Hide();
 	} // Show

@@ -193,6 +193,8 @@ class VisualNovel extends Tile {
 		this.tabs.Text("Text", function(){ 
 			this.scenes.get(this.shown_scene.Data() + "").ShowText(true);
 			this.icon_stockpile.Hide();
+			Tile.SelectedTile = null;
+			Spotlight.Die();
 		} ); // text callback
 		this.tabs.Text("Image", function(){ 
 			this.scenes.get(this.shown_scene.Data() + "").ShowText(false);
@@ -202,6 +204,9 @@ class VisualNovel extends Tile {
 		// Step 3: Setup clickables
 		this.p_setupui();
 	} // new
+	
+	// Call this function to delete a scene
+	// necessarily deletes the scene we're currently on
 	
 	// Call this function to save the current state to the server
 	public function Commit() {

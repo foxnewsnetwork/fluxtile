@@ -23,12 +23,16 @@ class Tile extends Element, implements Statistics {
 	private var mouseovers : Array<JqEvent -> Void>;
 	// Callback array for mouse leave
 	private var mouseleaves : Array<JqEvent -> Void>;
+	// Delete callback
+	private var deletes : Array<Void -> Void>;
 	// 0 is standard interactive, 1 is edit
 	private var mode : Int;
 	// User activity tracker
 	public var stats : { mouseover : Array<Float>, duration : Array<Float>, click : Array<Float> };
 	// edit_mode_initialized_flag
 	private var edit_mode_initialized_flag : Bool;
+	// flags for user interaction
+	private var interaction : Hash<Bool>;
 	
 	/***
 	* Inherited Public Functions
@@ -45,6 +49,21 @@ class Tile extends Element, implements Statistics {
 	/***
 	* Public Function Section
 	**/
+	public function Delete( ?cb : Void -> Void ) { 
+		if ( cb != null ) {
+			this.deletes.push(cb);
+			trace(cb);
+		} // if null
+		else {
+			trace("deleting"); 
+			for( delete in this.deletes ) { 
+				delete();
+			} // for
+			this.Hide();
+			this.Remove();
+		} // else
+	} // Delete
+	
 	// Returns the image url or changes it
 	public function Image( ?url : String ) : String { 
 		if( url == null ){ 
@@ -91,11 +110,12 @@ class Tile extends Element, implements Statistics {
 		this.clicks = [];
 		this.mouseovers = [];
 		this.mouseleaves = [];
-		
+		this.deletes = [];
 		super();
 		this.CSS("z-index", "968");
 		Tile.ID += 1;
 		this.edit_mode_initialized_flag = false;
+		this.interaction = new Hash<Bool>();
 	} // end new
 	
 	// Click function call back registry
@@ -122,6 +142,7 @@ class Tile extends Element, implements Statistics {
 			for( k in 0...this.mouseovers.length ){ 
 				this.mouseovers[k](null);
 				this.stats.mouseover.push(Timer.Start());
+				this.interaction.set("mouseover", true);
 			} //end for
 		} //end if
 		else{ 
@@ -140,6 +161,7 @@ class Tile extends Element, implements Statistics {
 			for( k in 0...this.mouseleaves.length ){ 
 				this.mouseleaves[k](null);
 				this.stats.duration.push(Timer.Stop());
+				this.interaction.set("mouseover", false);
 			} //end for
 		} //end if
 		else{ 
@@ -156,7 +178,13 @@ class Tile extends Element, implements Statistics {
 		super.Hide(cb);
 		if ( Tile.SelectedTile == this)
 			Spotlight.Die();
+		this.interaction.set("visible", false);
 	} // Hide
+	
+	public override function Show( ?cb : Void -> Void ) { 
+		super.Show(cb);
+		this.interaction.set("visible", true);
+	} // Show
 	/***
 	* Private Function Section
 	**/
@@ -182,6 +210,7 @@ class Tile extends Element, implements Statistics {
 					Tooltip.Show("Resize Mode (Press SPACE to toggle mode)");
 				else
 					Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+				Tooltip.Append(" OR Press D to delete." );
 			} // if
 			else { 
 				Tooltip.Show( "Click to select" );
@@ -206,6 +235,15 @@ class Tile extends Element, implements Statistics {
 				else
 					Tooltip.Show("Position mode (Press SPACE to toggle mode)");
 			} // if
+			trace( e.keyCode );
+			if ( e.keyCode == 100 ) { 
+				trace( Tile.SelectedTile.Id() );
+				if ( Tile.SelectedTile.Id() == this.Id() ) { 
+					Spotlight.Die();
+					Tooltip.Hide();
+					this.Delete();
+				} // if selected
+			} // if delete 
 		}); // keypress
 		this.domContainer.mousedown(function(e:JqEvent){
 			if( this.mode != 1 )

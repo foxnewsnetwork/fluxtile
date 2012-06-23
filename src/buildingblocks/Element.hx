@@ -4,6 +4,7 @@ import js.JQuery;
 class Element {
 	public static var ID : Int = 0;
 	public static var NAME : String = "FFOpenVN-Tile-Element-" + Math.floor(10000 * Math.random()); 
+	private var id : Int;
 	private var domContainer : JQuery;
 	private var domBody : JQuery;
 	private var position : { x : Float, y : Float };
@@ -27,7 +28,9 @@ class Element {
 		return this.class_name;
 	} // ClassName
 	
+	public function Id() { return this.id; }
 	public function new(){
+		this.id = Element.ID;
 		this.hides = [];
 		this.shows = []; 
 		this.position = { x : null, y : null };

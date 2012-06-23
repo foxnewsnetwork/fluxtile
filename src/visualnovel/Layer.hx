@@ -3,7 +3,14 @@ import buildingblocks.Tile;
 
 class Layer extends Tile {
 	private var storage : { id : Int, element_id : Int };
+	private var layer_id : Int;
 	
+	public function new() { 
+		this.layer_id = Tile.ID;
+		super();
+	} // new
+	
+	public function LayerId() : String { return this.layer_id + ""; }
 	public function Storage( ?data : { id : Int, element_id : Int } ) : { id : Int, element_id : Int } {
 		if( data != null )
 			this.storage = data;

@@ -2,6 +2,7 @@ $estr = function() { return js.Boot.__string_rec(this,''); }
 if(typeof buildingblocks=='undefined') buildingblocks = {}
 buildingblocks.Element = function(p) {
 	if( p === $_ ) return;
+	this.id = buildingblocks.Element.ID;
 	this.hides = [];
 	this.shows = [];
 	this.position = { x : null, y : null};
@@ -17,6 +18,7 @@ buildingblocks.Element = function(p) {
 	this.type_size = "px";
 }
 buildingblocks.Element.__name__ = ["buildingblocks","Element"];
+buildingblocks.Element.prototype.id = null;
 buildingblocks.Element.prototype.domContainer = null;
 buildingblocks.Element.prototype.domBody = null;
 buildingblocks.Element.prototype.position = null;
@@ -35,6 +37,9 @@ buildingblocks.Element.prototype.ClassName = function(cn) {
 		this.class_name = cn;
 	}
 	return this.class_name;
+}
+buildingblocks.Element.prototype.Id = function() {
+	return this.id;
 }
 buildingblocks.Element.prototype.TypePosition = function(type) {
 	if(type != null) this.type_position = type;
@@ -128,10 +133,12 @@ buildingblocks.Tile = function(p) {
 	this.clicks = [];
 	this.mouseovers = [];
 	this.mouseleaves = [];
+	this.deletes = [];
 	buildingblocks.Element.call(this);
 	this.CSS("z-index","968");
 	buildingblocks.Tile.ID += 1;
 	this.edit_mode_initialized_flag = false;
+	this.interaction = new Hash();
 }
 buildingblocks.Tile.__name__ = ["buildingblocks","Tile"];
 buildingblocks.Tile.__super__ = buildingblocks.Element;
@@ -140,9 +147,11 @@ buildingblocks.Tile.prototype.image = null;
 buildingblocks.Tile.prototype.clicks = null;
 buildingblocks.Tile.prototype.mouseovers = null;
 buildingblocks.Tile.prototype.mouseleaves = null;
+buildingblocks.Tile.prototype.deletes = null;
 buildingblocks.Tile.prototype.mode = null;
 buildingblocks.Tile.prototype.stats = null;
 buildingblocks.Tile.prototype.edit_mode_initialized_flag = null;
+buildingblocks.Tile.prototype.interaction = null;
 buildingblocks.Tile.prototype.Stats = function() {
 	return this.stats;
 }
@@ -150,6 +159,22 @@ buildingblocks.Tile.prototype.ClearStats = function() {
 	var tempstats = this.stats;
 	this.stats = { mouseover : [], duration : [], click : []};
 	return tempstats;
+}
+buildingblocks.Tile.prototype.Delete = function(cb) {
+	if(cb != null) {
+		this.deletes.push(cb);
+		haxe.Log.trace(cb,{ fileName : "Tile.hx", lineNumber : 55, className : "buildingblocks.Tile", methodName : "Delete"});
+	} else {
+		haxe.Log.trace("deleting",{ fileName : "Tile.hx", lineNumber : 58, className : "buildingblocks.Tile", methodName : "Delete"});
+		var _g = 0, _g1 = this.deletes;
+		while(_g < _g1.length) {
+			var $delete = _g1[_g];
+			++_g;
+			$delete();
+		}
+		this.Hide();
+		this.Remove();
+	}
 }
 buildingblocks.Tile.prototype.Image = function(url) {
 	if(url == null) return this.image; else if(this.image == url) return this.image;
@@ -202,6 +227,7 @@ buildingblocks.Tile.prototype.Mouseover = function(cb) {
 			var k = _g1++;
 			this.mouseovers[k](null);
 			this.stats.mouseover.push(tools.Timer.Start());
+			this.interaction.set("mouseover",true);
 		}
 	} else {
 		this.mouseovers.push(cb);
@@ -219,6 +245,7 @@ buildingblocks.Tile.prototype.Mouseleave = function(cb) {
 			var k = _g1++;
 			this.mouseleaves[k](null);
 			this.stats.duration.push(tools.Timer.Stop());
+			this.interaction.set("mouseover",false);
 		}
 	} else {
 		this.mouseleaves.push(cb);
@@ -232,6 +259,11 @@ buildingblocks.Tile.prototype.Mouseleave = function(cb) {
 buildingblocks.Tile.prototype.Hide = function(cb) {
 	buildingblocks.Element.prototype.Hide.call(this,cb);
 	if(buildingblocks.Tile.SelectedTile == this) animation.Spotlight.Die();
+	this.interaction.set("visible",false);
+}
+buildingblocks.Tile.prototype.Show = function(cb) {
+	buildingblocks.Element.prototype.Show.call(this,cb);
+	this.interaction.set("visible",true);
 }
 buildingblocks.Tile.prototype.p_EditMode = function() {
 	var me = this;
@@ -247,6 +279,7 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 		if(me.mode != 1) return;
 		if(buildingblocks.Tile.SelectedTile == me) {
 			if(altdownflag) tools.Tooltip.Show("Resize Mode (Press SPACE to toggle mode)"); else tools.Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+			tools.Tooltip.Append(" OR Press D to delete.");
 		} else tools.Tooltip.Show("Click to select");
 	});
 	this.domContainer.bind("mouseleave",function(e) {
@@ -259,6 +292,15 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 		if(e.keyCode == 32) {
 			altdownflag = !altdownflag;
 			if(altdownflag) tools.Tooltip.Show("Resize Mode (Press SPACE to toggle mode)"); else tools.Tooltip.Show("Position mode (Press SPACE to toggle mode)");
+		}
+		haxe.Log.trace(e.keyCode,{ fileName : "Tile.hx", lineNumber : 238, className : "buildingblocks.Tile", methodName : "p_EditMode"});
+		if(e.keyCode == 100) {
+			haxe.Log.trace(buildingblocks.Tile.SelectedTile.Id(),{ fileName : "Tile.hx", lineNumber : 240, className : "buildingblocks.Tile", methodName : "p_EditMode"});
+			if(buildingblocks.Tile.SelectedTile.Id() == me.Id()) {
+				animation.Spotlight.Die();
+				tools.Tooltip.Hide();
+				me.Delete();
+			}
 		}
 	});
 	this.domContainer.mousedown(function(e) {
@@ -431,12 +473,17 @@ tools.Measure.prototype.__class__ = tools.Measure;
 if(typeof visualnovel=='undefined') visualnovel = {}
 visualnovel.Layer = function(p) {
 	if( p === $_ ) return;
+	this.layer_id = buildingblocks.Tile.ID;
 	buildingblocks.Tile.call(this);
 }
 visualnovel.Layer.__name__ = ["visualnovel","Layer"];
 visualnovel.Layer.__super__ = buildingblocks.Tile;
 for(var k in buildingblocks.Tile.prototype ) visualnovel.Layer.prototype[k] = buildingblocks.Tile.prototype[k];
 visualnovel.Layer.prototype.storage = null;
+visualnovel.Layer.prototype.layer_id = null;
+visualnovel.Layer.prototype.LayerId = function() {
+	return this.layer_id + "";
+}
 visualnovel.Layer.prototype.Storage = function(data) {
 	if(data != null) this.storage = data;
 	return this.storage;
@@ -777,7 +824,7 @@ visualnovel.Scene = function(p) {
 	buildingblocks.Tile.call(this);
 	this.text = new controls.TextControl();
 	this.text.ClassName("scene-text textbox");
-	this.layers = [];
+	this.layers = new Hash();
 	this.edit_flag = false;
 	this.storage = { id : null, owner_id : null, parent_id : null};
 }
@@ -789,24 +836,30 @@ visualnovel.Scene.prototype.layers = null;
 visualnovel.Scene.prototype.edit_flag = null;
 visualnovel.Scene.prototype.storage = null;
 visualnovel.Scene.prototype.AddLayer = function(data) {
-	var layer = new visualnovel.Layer();
-	layer.Load(data);
-	layer.Mode(1);
-	this.layers.push(layer);
-	layer.Show();
+	var me = this;
+	var lay = new visualnovel.Layer();
+	lay.Load(data);
+	lay.Mode(1);
+	lay.Delete(function() {
+		me.RemoveLayer(lay);
+	});
+	this.layers.set(lay.LayerId(),lay);
+	lay.Show();
 }
 visualnovel.Scene.prototype.RemoveLayer = function(layer) {
-	if(this.layers.remove(layer)) layer.Hide(); else throw "Tile remove problem";
+	if(this.layers.remove(layer.LayerId())) {
+		layer.Hide();
+		haxe.Log.trace("removed layer",{ fileName : "Scene.hx", lineNumber : 43, className : "visualnovel.Scene", methodName : "RemoveLayer"});
+	} else throw "Tile remove problem";
 }
 visualnovel.Scene.prototype.ShowText = function(flag) {
 	if(flag) this.text.Show(); else this.text.Hide();
 }
 visualnovel.Scene.prototype.GetState = function() {
 	var state = { layers : [], text : this.text.GetState(), id : this.storage.id, parent_id : this.storage.parent_id, owner_id : this.storage.owner_id, fork_text : "", fork_image : "", fork_number : -1, children_id : []};
-	var _g = 0, _g1 = this.layers;
-	while(_g < _g1.length) {
-		var layer = _g1[_g];
-		++_g;
+	var $it0 = this.layers.iterator();
+	while( $it0.hasNext() ) {
+		var layer = $it0.next();
 		state.layers.push(layer.GetState());
 	}
 	return state;
@@ -814,33 +867,38 @@ visualnovel.Scene.prototype.GetState = function() {
 visualnovel.Scene.prototype.Edit = function(flag) {
 	this.edit_flag = flag != null?flag:!this.edit_flag;
 	if(this.edit_flag) {
-		var _g = 0, _g1 = this.layers;
-		while(_g < _g1.length) {
-			var layer = _g1[_g];
-			++_g;
+		var $it0 = this.layers.iterator();
+		while( $it0.hasNext() ) {
+			var layer = $it0.next();
 			layer.Mode(1);
 		}
 	} else {
-		var _g = 0, _g1 = this.layers;
-		while(_g < _g1.length) {
-			var layer = _g1[_g];
-			++_g;
+		var $it1 = this.layers.iterator();
+		while( $it1.hasNext() ) {
+			var layer = $it1.next();
 			layer.Mode(0);
 		}
 	}
 	this.text.Edit(this.edit_flag);
 }
 visualnovel.Scene.prototype.Load = function(data) {
+	var me = this;
 	this.text.Hide();
 	this.text.Text(data.text);
-	this.layers = [];
+	this.layers = new Hash();
 	var _g = 0, _g1 = data.layers;
 	while(_g < _g1.length) {
 		var layerdata = _g1[_g];
 		++_g;
 		var layer = new visualnovel.Layer();
 		layer.Load(layerdata);
-		this.layers.push(layer);
+		layer.Delete((function(l) {
+			return function() {
+				haxe.Log.trace("almost to deleting",{ fileName : "Scene.hx", lineNumber : 103, className : "visualnovel.Scene", methodName : "Load"});
+				me.RemoveLayer(l);
+			};
+		})(layer));
+		this.layers.set(layer.LayerId(),layer);
 	}
 	this.storage.id = data.id;
 	this.storage.owner_id = data.owner_id;
@@ -848,19 +906,19 @@ visualnovel.Scene.prototype.Load = function(data) {
 }
 visualnovel.Scene.prototype.Show = function(cb) {
 	buildingblocks.Tile.prototype.Show.call(this,cb);
-	var _g1 = 0, _g = this.layers.length;
-	while(_g1 < _g) {
-		var k = _g1++;
-		this.layers[k].Show();
+	var $it0 = this.layers.keys();
+	while( $it0.hasNext() ) {
+		var key = $it0.next();
+		this.layers.get(key).Show();
 	}
 	this.text.Show();
 }
 visualnovel.Scene.prototype.Hide = function(cb) {
 	buildingblocks.Tile.prototype.Hide.call(this,cb);
-	var _g1 = 0, _g = this.layers.length;
-	while(_g1 < _g) {
-		var k = _g1++;
-		this.layers[k].Hide();
+	var $it0 = this.layers.keys();
+	while( $it0.hasNext() ) {
+		var key = $it0.next();
+		this.layers.get(key).Hide();
 	}
 	this.text.Hide();
 }
@@ -902,6 +960,8 @@ visualnovel.VisualNovel = function(p) {
 	this.tabs.Text("Text",function() {
 		me.scenes.get(me.shown_scene.Data() + "").ShowText(true);
 		me.icon_stockpile.Hide();
+		buildingblocks.Tile.SelectedTile = null;
+		animation.Spotlight.Die();
 	});
 	this.tabs.Text("Image",function() {
 		me.scenes.get(me.shown_scene.Data() + "").ShowText(false);
@@ -1021,7 +1081,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 			var self_node = history.pop();
 			temp_history.push(self_node);
 			var scene_state = me.scenes.get(self_node.Data() + "").GetState();
-			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 220, className : "visualnovel.VisualNovel", methodName : "Commit"});
+			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 225, className : "visualnovel.VisualNovel", methodName : "Commit"});
 			var fork_node = me.forks.get(self_node.Parent() + "-" + self_node.Data());
 			var _g = 0, _g1 = self_node.Children();
 			while(_g < _g1.length) {
@@ -1870,6 +1930,9 @@ controls.IconsControl.prototype.p_resize = function() {
 controls.IconsControl.prototype.__class__ = controls.IconsControl;
 tools.Tooltip = function() { }
 tools.Tooltip.__name__ = ["tools","Tooltip"];
+tools.Tooltip.Append = function(html) {
+	tools.Tooltip.HaxeToolTip.Append(html);
+}
 tools.Tooltip.Show = function(html) {
 	var t = tools.Tooltip.HaxeToolTip;
 	t.Show();
