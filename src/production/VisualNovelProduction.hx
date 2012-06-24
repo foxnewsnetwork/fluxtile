@@ -13,6 +13,9 @@ class VisualNovelProduction {
 		vn.SetupForking( function(cb : Int -> Void) { 
 			untyped FluxTileBridge_Fork( cb );
 		} ); // SetupForking
+		vn.SetupDeleting(function(data){ 
+			untyped FluxTileBridge_Delete(data);
+		} ); // SetupDeleting
 		untyped FluxTileBridge_Load( vn );
 	} // main
 } // VisualNovelProduction

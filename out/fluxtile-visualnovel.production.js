@@ -696,6 +696,50 @@ controls.TextControl.prototype.Show = function(cb) {
 	this.backlight.Show();
 }
 controls.TextControl.prototype.__class__ = controls.TextControl;
+visualnovel.Fork = function(p) {
+}
+visualnovel.Fork.__name__ = ["visualnovel","Fork"];
+visualnovel.Fork.prototype.origin_scene_id = null;
+visualnovel.Fork.prototype.target_scene_id = null;
+visualnovel.Fork.prototype.text = null;
+visualnovel.Fork.prototype.choice_number = null;
+visualnovel.Fork.prototype.Text = function() {
+	return this.text;
+}
+visualnovel.Fork.prototype.Load = function(scenedata) {
+	this.text = scenedata.fork_text;
+	this.target_scene_id = scenedata.id;
+	this.origin_scene_id = scenedata.parent_id;
+	this.choice_number = scenedata.fork_number;
+}
+visualnovel.Fork.prototype.GetHash = function() {
+	return this.origin_scene_id + "-" + this.target_scene_id;
+}
+visualnovel.Fork.prototype.Choice = function() {
+	return this.choice_number;
+}
+visualnovel.Fork.prototype.__class__ = visualnovel.Fork;
+if(typeof events=='undefined') events = {}
+events.Event = function(name,origin) {
+	if( name === $_ ) return;
+	this.name = name;
+	this.origin = origin;
+}
+events.Event.__name__ = ["events","Event"];
+events.Event.prototype.name = null;
+events.Event.prototype.origin = null;
+events.Event.prototype.__class__ = events.Event;
+if(typeof visualnovelevents=='undefined') visualnovelevents = {}
+visualnovelevents.LayerDeleteEvent = function(id,origin) {
+	if( id === $_ ) return;
+	events.Event.call(this,visualnovelevents.LayerDeleteEvent.Name,origin);
+	this.id = id;
+}
+visualnovelevents.LayerDeleteEvent.__name__ = ["visualnovelevents","LayerDeleteEvent"];
+visualnovelevents.LayerDeleteEvent.__super__ = events.Event;
+for(var k in events.Event.prototype ) visualnovelevents.LayerDeleteEvent.prototype[k] = events.Event.prototype[k];
+visualnovelevents.LayerDeleteEvent.prototype.id = null;
+visualnovelevents.LayerDeleteEvent.prototype.__class__ = visualnovelevents.LayerDeleteEvent;
 haxe.Timer = function(time_ms) {
 	if( time_ms === $_ ) return;
 	var arr = haxe_timers;
@@ -750,29 +794,6 @@ tools.Timer.Stop = function() {
 	return difference;
 }
 tools.Timer.prototype.__class__ = tools.Timer;
-visualnovel.Fork = function(p) {
-}
-visualnovel.Fork.__name__ = ["visualnovel","Fork"];
-visualnovel.Fork.prototype.origin_scene_id = null;
-visualnovel.Fork.prototype.target_scene_id = null;
-visualnovel.Fork.prototype.text = null;
-visualnovel.Fork.prototype.choice_number = null;
-visualnovel.Fork.prototype.Text = function() {
-	return this.text;
-}
-visualnovel.Fork.prototype.Load = function(scenedata) {
-	this.text = scenedata.fork_text;
-	this.target_scene_id = scenedata.id;
-	this.origin_scene_id = scenedata.parent_id;
-	this.choice_number = scenedata.fork_number;
-}
-visualnovel.Fork.prototype.GetHash = function() {
-	return this.origin_scene_id + "-" + this.target_scene_id;
-}
-visualnovel.Fork.prototype.Choice = function() {
-	return this.choice_number;
-}
-visualnovel.Fork.prototype.__class__ = visualnovel.Fork;
 visualnovel.Scene = function(p) {
 	if( p === $_ ) return;
 	buildingblocks.Tile.call(this);
@@ -801,9 +822,10 @@ visualnovel.Scene.prototype.AddLayer = function(data) {
 	lay.Show();
 }
 visualnovel.Scene.prototype.RemoveLayer = function(layer) {
+	events.EventMachine.Fire(new visualnovelevents.LayerDeleteEvent(layer.Id(),this.Id()));
 	if(this.layers.remove(layer.LayerId())) {
 		layer.Hide();
-		haxe.Log.trace("removed layer",{ fileName : "Scene.hx", lineNumber : 43, className : "visualnovel.Scene", methodName : "RemoveLayer"});
+		haxe.Log.trace("removed layer",{ fileName : "Scene.hx", lineNumber : 47, className : "visualnovel.Scene", methodName : "RemoveLayer"});
 	} else throw "Tile remove problem";
 }
 visualnovel.Scene.prototype.ShowText = function(flag) {
@@ -848,7 +870,7 @@ visualnovel.Scene.prototype.Load = function(data) {
 		layer.Load(layerdata);
 		layer.Delete((function(l) {
 			return function() {
-				haxe.Log.trace("almost to deleting",{ fileName : "Scene.hx", lineNumber : 103, className : "visualnovel.Scene", methodName : "Load"});
+				haxe.Log.trace("almost to deleting",{ fileName : "Scene.hx", lineNumber : 107, className : "visualnovel.Scene", methodName : "Load"});
 				me.RemoveLayer(l);
 			};
 		})(layer));
@@ -945,6 +967,8 @@ visualnovel.VisualNovel.prototype.tabs = null;
 visualnovel.VisualNovel.prototype.icon_stockpile = null;
 visualnovel.VisualNovel.prototype.fork_callto = null;
 visualnovel.VisualNovel.prototype.commit_callto = null;
+visualnovel.VisualNovel.prototype.delete_layer_callto = null;
+visualnovel.VisualNovel.prototype.delete_layer_queue = null;
 visualnovel.VisualNovel.prototype.Start = function() {
 	this.active_scene = this.scene_tree;
 	this.shown_scene = this.active_scene;
@@ -1000,6 +1024,15 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		leafs = children;
 	}
 }
+visualnovel.VisualNovel.prototype.SetupDeleting = function(cb) {
+	var me = this;
+	this.delete_layer_callto = cb;
+	this.delete_layer_queue = [];
+	events.EventMachine.Listen(visualnovelevents.LayerDeleteEvent.Name,function(e) {
+		if(e.id != null) me.delete_layer_queue.push(e.id);
+		haxe.Log.trace(e.id,{ fileName : "VisualNovel.hx", lineNumber : 140, className : "visualnovel.VisualNovel", methodName : "SetupDeleting"});
+	});
+}
 visualnovel.VisualNovel.prototype.SetupPermission = function(data) {
 	this.permission = data.level;
 	this.user_id = data.user_id;
@@ -1019,7 +1052,7 @@ visualnovel.VisualNovel.prototype.SetupStockpile = function(stockdata) {
 		this.icon_stockpile.AddIcon(stock.picture,(function(s) {
 			return function() {
 				var size = tools.Measure.ImageSize(s.picture);
-				haxe.Log.trace(size,{ fileName : "VisualNovel.hx", lineNumber : 154, className : "visualnovel.VisualNovel", methodName : "SetupStockpile"});
+				haxe.Log.trace(size,{ fileName : "VisualNovel.hx", lineNumber : 169, className : "visualnovel.VisualNovel", methodName : "SetupStockpile"});
 				me.scenes.get(me.shown_scene.Data() + "").AddLayer({ id : null, image : s.picture, width : size.width, height : size.height, x : 50.0, y : 50.0, element_id : s.id});
 			};
 		})(stock));
@@ -1035,7 +1068,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 			var self_node = history.pop();
 			temp_history.push(self_node);
 			var scene_state = me.scenes.get(self_node.Data() + "").GetState();
-			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 225, className : "visualnovel.VisualNovel", methodName : "Commit"});
+			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 240, className : "visualnovel.VisualNovel", methodName : "Commit"});
 			var fork_node = me.forks.get(self_node.Parent() + "-" + self_node.Data());
 			var _g = 0, _g1 = self_node.Children();
 			while(_g < _g1.length) {
@@ -1055,6 +1088,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 	var fullstate = lambda_generatestate(this.past_history);
 	fullstate = fullstate.concat(lambda_generatestate(this.future_history));
 	this.commit_callto(fullstate);
+	this.delete_layer_callto(this.delete_layer_queue);
 }
 visualnovel.VisualNovel.prototype.Edit = function(flag) {
 	if(!this.p_checkpermission("edit")) return;
@@ -1906,36 +1940,6 @@ tools.Tooltip.Hide = function() {
 	tools.Tooltip.HaxeToolTip.Hide();
 }
 tools.Tooltip.prototype.__class__ = tools.Tooltip;
-animation.Spotlight = function(p) {
-	if( p === $_ ) return;
-	var me = this;
-	this.highlighter = new animation.BoxHighlighter();
-	this.mouse = { x : 0.0, y : 0.0};
-	new js.JQuery("body").mousemove(function(e) {
-		me.mouse.x = e.pageX + 0.0;
-		me.mouse.y = e.pageY + 0.0;
-	});
-}
-animation.Spotlight.__name__ = ["animation","Spotlight"];
-animation.Spotlight.Shine = function(size,pos) {
-	animation.Spotlight.Lights.Size(size);
-	animation.Spotlight.Lights.Position(pos);
-	animation.Spotlight.Lights.Show();
-}
-animation.Spotlight.Die = function() {
-	animation.Spotlight.Lights.Hide();
-}
-animation.Spotlight.prototype.highlighter = null;
-animation.Spotlight.prototype.mouse = null;
-animation.Spotlight.prototype.On = function(size,pos) {
-	this.highlighter.Size(size);
-	if(pos != null) this.highlighter.Position(pos); else this.highlighter.Position({ x : this.mouse.x - size.width / 2, y : this.mouse.y - size.height / 2});
-	this.highlighter.Show();
-}
-animation.Spotlight.prototype.Off = function() {
-	this.highlighter.Hide();
-}
-animation.Spotlight.prototype.__class__ = animation.Spotlight;
 Hash = function(p) {
 	if( p === $_ ) return;
 	this.h = {}
@@ -1994,6 +1998,54 @@ Hash.prototype.toString = function() {
 	return s.b.join("");
 }
 Hash.prototype.__class__ = Hash;
+events.EventMachine = function() { }
+events.EventMachine.__name__ = ["events","EventMachine"];
+events.EventMachine.Listen = function(name,cb) {
+	if(!events.EventMachine.event_storage.exists(name)) events.EventMachine.event_storage.set(name,[function(e) {
+		haxe.Log.trace(e,{ fileName : "EventMachine.hx", lineNumber : 11, className : "events.EventMachine", methodName : "Listen"});
+	}]);
+	events.EventMachine.event_storage.get(name).push(cb);
+}
+events.EventMachine.Fire = function(e) {
+	if(!events.EventMachine.event_storage.exists(e.name)) return;
+	var _g = 0, _g1 = events.EventMachine.event_storage.get(e.name);
+	while(_g < _g1.length) {
+		var handler = _g1[_g];
+		++_g;
+		handler(e);
+	}
+}
+events.EventMachine.prototype.__class__ = events.EventMachine;
+animation.Spotlight = function(p) {
+	if( p === $_ ) return;
+	var me = this;
+	this.highlighter = new animation.BoxHighlighter();
+	this.mouse = { x : 0.0, y : 0.0};
+	new js.JQuery("body").mousemove(function(e) {
+		me.mouse.x = e.pageX + 0.0;
+		me.mouse.y = e.pageY + 0.0;
+	});
+}
+animation.Spotlight.__name__ = ["animation","Spotlight"];
+animation.Spotlight.Shine = function(size,pos) {
+	animation.Spotlight.Lights.Size(size);
+	animation.Spotlight.Lights.Position(pos);
+	animation.Spotlight.Lights.Show();
+}
+animation.Spotlight.Die = function() {
+	animation.Spotlight.Lights.Hide();
+}
+animation.Spotlight.prototype.highlighter = null;
+animation.Spotlight.prototype.mouse = null;
+animation.Spotlight.prototype.On = function(size,pos) {
+	this.highlighter.Size(size);
+	if(pos != null) this.highlighter.Position(pos); else this.highlighter.Position({ x : this.mouse.x - size.width / 2, y : this.mouse.y - size.height / 2});
+	this.highlighter.Show();
+}
+animation.Spotlight.prototype.Off = function() {
+	this.highlighter.Hide();
+}
+animation.Spotlight.prototype.__class__ = animation.Spotlight;
 if(typeof production=='undefined') production = {}
 production.VisualNovelProduction = function() { }
 production.VisualNovelProduction.__name__ = ["production","VisualNovelProduction"];
@@ -2004,6 +2056,9 @@ production.VisualNovelProduction.main = function() {
 	});
 	vn.SetupForking(function(cb) {
 		FluxTileBridge_Fork(cb);
+	});
+	vn.SetupDeleting(function(data) {
+		FluxTileBridge_Delete(data);
 	});
 	FluxTileBridge_Load(vn);
 }
@@ -2135,6 +2190,7 @@ tools.Measure.NAME = "FFOpenVN-MeasureTool-" + tools.Random.Get(999999);
 toolbar.HorizontalBar.NAME = "FFOpenVN-Horizontal-Bar-" + tools.Random.Get(10000);
 toolbar.HorizontalBar.ID = 0;
 controls.TextControl.ID = 0;
+visualnovelevents.LayerDeleteEvent.Name = "layer delete event";
 tools.Timer.TIME = haxe.Timer.stamp();
 js.Lib.onerror = null;
 toolbar.VerticalBar.NAME = "FFOpenVN-Vertical-Bar-" + tools.Random.Get(10000);
@@ -2144,5 +2200,6 @@ controls.IconsControl.IconsPerList = 5;
 controls.IconsControl.NAME = "FFOpenVN-IconsControl-" + tools.Random.Get(999999);
 tools.Tooltip.HaxeToolTip = new buildingblocks.Tile();
 tools.Tooltip.ID = 0;
+events.EventMachine.event_storage = new Hash();
 animation.Spotlight.Lights = new animation.BoxHighlighter();
 production.VisualNovelProduction.main()

@@ -3,6 +3,8 @@ import controls.IconsControl;
 import controls.TextControl;
 import buildingblocks.Tile;
 import toolbar.HorizontalBar;
+import visualnovelevents.LayerDeleteEvent;
+import events.EventMachine;
 
 class Scene extends Tile {
 	/****
@@ -38,6 +40,8 @@ class Scene extends Tile {
 	} // AddLayer
 	
 	public function RemoveLayer(layer : Layer) { 
+		EventMachine.Fire(new LayerDeleteEvent(layer.Id(), this.Id() ) );
+		
 		if (this.layers.remove(layer.LayerId())) {
 			layer.Hide();
 			trace("removed layer");

@@ -2,6 +2,7 @@ package tests;
 import visualnovel.VisualNovel; 
 import visualnovel.SceneData;
 import tools.Random;
+import methodspec.EventMachineSpec;
 
 class VisualNovelTest {
 	public static function main() { 
@@ -82,7 +83,14 @@ class VisualNovelTest {
 		vn.SetupStockpile(stockdata);
 		vn.Load(sd0);
 		vn.SetupPermission({ user_id : 12, level : 3 });
+		vn.SetupDeleting(function(ids) { 
+			trace(ids);
+			trace("the event machine is working");
+		} ); // SetupDeleting
 		vn.Start();
 		
+		var runner = new haxe.unit.TestRunner();
+		runner.add(new EventMachineSpec());
+		runner.run();
 	} // main
 } // VisualNovelTest

@@ -400,6 +400,89 @@ controls.InputControl.Input = function(cb,placeholder) {
 	});
 }
 controls.InputControl.prototype.__class__ = controls.InputControl;
+if(typeof haxe=='undefined') haxe = {}
+haxe.StackItem = { __ename__ : ["haxe","StackItem"], __constructs__ : ["CFunction","Module","FilePos","Method","Lambda"] }
+haxe.StackItem.CFunction = ["CFunction",0];
+haxe.StackItem.CFunction.toString = $estr;
+haxe.StackItem.CFunction.__enum__ = haxe.StackItem;
+haxe.StackItem.Module = function(m) { var $x = ["Module",1,m]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; }
+haxe.StackItem.FilePos = function(s,file,line) { var $x = ["FilePos",2,s,file,line]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; }
+haxe.StackItem.Method = function(classname,method) { var $x = ["Method",3,classname,method]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; }
+haxe.StackItem.Lambda = function(v) { var $x = ["Lambda",4,v]; $x.__enum__ = haxe.StackItem; $x.toString = $estr; return $x; }
+haxe.Stack = function() { }
+haxe.Stack.__name__ = ["haxe","Stack"];
+haxe.Stack.callStack = function() {
+	return haxe.Stack.makeStack("$s");
+}
+haxe.Stack.exceptionStack = function() {
+	return haxe.Stack.makeStack("$e");
+}
+haxe.Stack.toString = function(stack) {
+	var b = new StringBuf();
+	var _g = 0;
+	while(_g < stack.length) {
+		var s = stack[_g];
+		++_g;
+		b.b[b.b.length] = "\nCalled from " == null?"null":"\nCalled from ";
+		haxe.Stack.itemToString(b,s);
+	}
+	return b.b.join("");
+}
+haxe.Stack.itemToString = function(b,s) {
+	var $e = (s);
+	switch( $e[1] ) {
+	case 0:
+		b.b[b.b.length] = "a C function" == null?"null":"a C function";
+		break;
+	case 1:
+		var m = $e[2];
+		b.b[b.b.length] = "module " == null?"null":"module ";
+		b.b[b.b.length] = m == null?"null":m;
+		break;
+	case 2:
+		var line = $e[4], file = $e[3], s1 = $e[2];
+		if(s1 != null) {
+			haxe.Stack.itemToString(b,s1);
+			b.b[b.b.length] = " (" == null?"null":" (";
+		}
+		b.b[b.b.length] = file == null?"null":file;
+		b.b[b.b.length] = " line " == null?"null":" line ";
+		b.b[b.b.length] = line == null?"null":line;
+		if(s1 != null) b.b[b.b.length] = ")" == null?"null":")";
+		break;
+	case 3:
+		var meth = $e[3], cname = $e[2];
+		b.b[b.b.length] = cname == null?"null":cname;
+		b.b[b.b.length] = "." == null?"null":".";
+		b.b[b.b.length] = meth == null?"null":meth;
+		break;
+	case 4:
+		var n = $e[2];
+		b.b[b.b.length] = "local function #" == null?"null":"local function #";
+		b.b[b.b.length] = n == null?"null":n;
+		break;
+	}
+}
+haxe.Stack.makeStack = function(s) {
+	var a = (function($this) {
+		var $r;
+		try {
+			$r = eval(s);
+		} catch( e ) {
+			$r = [];
+		}
+		return $r;
+	}(this));
+	var m = new Array();
+	var _g1 = 0, _g = a.length - (s == "$s"?2:0);
+	while(_g1 < _g) {
+		var i = _g1++;
+		var d = a[i].split("::");
+		m.unshift(haxe.StackItem.Method(d[0],d[1]));
+	}
+	return m;
+}
+haxe.Stack.prototype.__class__ = haxe.Stack;
 if(typeof datastructures=='undefined') datastructures = {}
 datastructures.Tree = function() { }
 datastructures.Tree.__name__ = ["datastructures","Tree"];
@@ -500,7 +583,239 @@ visualnovel.Layer.prototype.GetState = function() {
 	return { id : this.Storage().id, image : this.Image(), width : this.Size().width, height : this.Size().height, x : this.Position().x, y : this.Position().y, element_id : this.Storage().element_id};
 }
 visualnovel.Layer.prototype.__class__ = visualnovel.Layer;
-if(typeof haxe=='undefined') haxe = {}
+StringTools = function() { }
+StringTools.__name__ = ["StringTools"];
+StringTools.urlEncode = function(s) {
+	return encodeURIComponent(s);
+}
+StringTools.urlDecode = function(s) {
+	return decodeURIComponent(s.split("+").join(" "));
+}
+StringTools.htmlEscape = function(s) {
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+}
+StringTools.htmlUnescape = function(s) {
+	return s.split("&gt;").join(">").split("&lt;").join("<").split("&amp;").join("&");
+}
+StringTools.startsWith = function(s,start) {
+	return s.length >= start.length && s.substr(0,start.length) == start;
+}
+StringTools.endsWith = function(s,end) {
+	var elen = end.length;
+	var slen = s.length;
+	return slen >= elen && s.substr(slen - elen,elen) == end;
+}
+StringTools.isSpace = function(s,pos) {
+	var c = s.charCodeAt(pos);
+	return c >= 9 && c <= 13 || c == 32;
+}
+StringTools.ltrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return s.substr(r,l - r); else return s;
+}
+StringTools.rtrim = function(s) {
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return s.substr(0,l - r); else return s;
+}
+StringTools.trim = function(s) {
+	return StringTools.ltrim(StringTools.rtrim(s));
+}
+StringTools.rpad = function(s,c,l) {
+	var sl = s.length;
+	var cl = c.length;
+	while(sl < l) if(l - sl < cl) {
+		s += c.substr(0,l - sl);
+		sl = l;
+	} else {
+		s += c;
+		sl += cl;
+	}
+	return s;
+}
+StringTools.lpad = function(s,c,l) {
+	var ns = "";
+	var sl = s.length;
+	if(sl >= l) return s;
+	var cl = c.length;
+	while(sl < l) if(l - sl < cl) {
+		ns += c.substr(0,l - sl);
+		sl = l;
+	} else {
+		ns += c;
+		sl += cl;
+	}
+	return ns + s;
+}
+StringTools.replace = function(s,sub,by) {
+	return s.split(sub).join(by);
+}
+StringTools.hex = function(n,digits) {
+	var s = "";
+	var hexChars = "0123456789ABCDEF";
+	do {
+		s = hexChars.charAt(n & 15) + s;
+		n >>>= 4;
+	} while(n > 0);
+	if(digits != null) while(s.length < digits) s = "0" + s;
+	return s;
+}
+StringTools.fastCodeAt = function(s,index) {
+	return s.cca(index);
+}
+StringTools.isEOF = function(c) {
+	return c != c;
+}
+StringTools.prototype.__class__ = StringTools;
+if(!haxe.unit) haxe.unit = {}
+haxe.unit.TestResult = function(p) {
+	if( p === $_ ) return;
+	this.m_tests = new List();
+	this.success = true;
+}
+haxe.unit.TestResult.__name__ = ["haxe","unit","TestResult"];
+haxe.unit.TestResult.prototype.m_tests = null;
+haxe.unit.TestResult.prototype.success = null;
+haxe.unit.TestResult.prototype.add = function(t) {
+	this.m_tests.add(t);
+	if(!t.success) this.success = false;
+}
+haxe.unit.TestResult.prototype.toString = function() {
+	var buf = new StringBuf();
+	var failures = 0;
+	var $it0 = this.m_tests.iterator();
+	while( $it0.hasNext() ) {
+		var test = $it0.next();
+		if(test.success == false) {
+			buf.b[buf.b.length] = "* " == null?"null":"* ";
+			buf.add(test.classname);
+			buf.b[buf.b.length] = "::" == null?"null":"::";
+			buf.add(test.method);
+			buf.b[buf.b.length] = "()" == null?"null":"()";
+			buf.b[buf.b.length] = "\n" == null?"null":"\n";
+			buf.b[buf.b.length] = "ERR: " == null?"null":"ERR: ";
+			if(test.posInfos != null) {
+				buf.add(test.posInfos.fileName);
+				buf.b[buf.b.length] = ":" == null?"null":":";
+				buf.add(test.posInfos.lineNumber);
+				buf.b[buf.b.length] = "(" == null?"null":"(";
+				buf.add(test.posInfos.className);
+				buf.b[buf.b.length] = "." == null?"null":".";
+				buf.add(test.posInfos.methodName);
+				buf.b[buf.b.length] = ") - " == null?"null":") - ";
+			}
+			buf.add(test.error);
+			buf.b[buf.b.length] = "\n" == null?"null":"\n";
+			if(test.backtrace != null) {
+				buf.add(test.backtrace);
+				buf.b[buf.b.length] = "\n" == null?"null":"\n";
+			}
+			buf.b[buf.b.length] = "\n" == null?"null":"\n";
+			failures++;
+		}
+	}
+	buf.b[buf.b.length] = "\n" == null?"null":"\n";
+	if(failures == 0) buf.b[buf.b.length] = "OK " == null?"null":"OK "; else buf.b[buf.b.length] = "FAILED " == null?"null":"FAILED ";
+	buf.add(this.m_tests.length);
+	buf.b[buf.b.length] = " tests, " == null?"null":" tests, ";
+	buf.b[buf.b.length] = failures == null?"null":failures;
+	buf.b[buf.b.length] = " failed, " == null?"null":" failed, ";
+	buf.add(this.m_tests.length - failures);
+	buf.b[buf.b.length] = " success" == null?"null":" success";
+	buf.b[buf.b.length] = "\n" == null?"null":"\n";
+	return buf.b.join("");
+}
+haxe.unit.TestResult.prototype.__class__ = haxe.unit.TestResult;
+Reflect = function() { }
+Reflect.__name__ = ["Reflect"];
+Reflect.hasField = function(o,field) {
+	if(o.hasOwnProperty != null) return o.hasOwnProperty(field);
+	var arr = Reflect.fields(o);
+	var $it0 = arr.iterator();
+	while( $it0.hasNext() ) {
+		var t = $it0.next();
+		if(t == field) return true;
+	}
+	return false;
+}
+Reflect.field = function(o,field) {
+	var v = null;
+	try {
+		v = o[field];
+	} catch( e ) {
+	}
+	return v;
+}
+Reflect.setField = function(o,field,value) {
+	o[field] = value;
+}
+Reflect.callMethod = function(o,func,args) {
+	return func.apply(o,args);
+}
+Reflect.fields = function(o) {
+	if(o == null) return new Array();
+	var a = new Array();
+	if(o.hasOwnProperty) {
+		for(var i in o) if( o.hasOwnProperty(i) ) a.push(i);
+	} else {
+		var t;
+		try {
+			t = o.__proto__;
+		} catch( e ) {
+			t = null;
+		}
+		if(t != null) o.__proto__ = null;
+		for(var i in o) if( i != "__proto__" ) a.push(i);
+		if(t != null) o.__proto__ = t;
+	}
+	return a;
+}
+Reflect.isFunction = function(f) {
+	return typeof(f) == "function" && f.__name__ == null;
+}
+Reflect.compare = function(a,b) {
+	return a == b?0:a > b?1:-1;
+}
+Reflect.compareMethods = function(f1,f2) {
+	if(f1 == f2) return true;
+	if(!Reflect.isFunction(f1) || !Reflect.isFunction(f2)) return false;
+	return f1.scope == f2.scope && f1.method == f2.method && f1.method != null;
+}
+Reflect.isObject = function(v) {
+	if(v == null) return false;
+	var t = typeof(v);
+	return t == "string" || t == "object" && !v.__enum__ || t == "function" && v.__name__ != null;
+}
+Reflect.deleteField = function(o,f) {
+	if(!Reflect.hasField(o,f)) return false;
+	delete(o[f]);
+	return true;
+}
+Reflect.copy = function(o) {
+	var o2 = { };
+	var _g = 0, _g1 = Reflect.fields(o);
+	while(_g < _g1.length) {
+		var f = _g1[_g];
+		++_g;
+		o2[f] = Reflect.field(o,f);
+	}
+	return o2;
+}
+Reflect.makeVarArgs = function(f) {
+	return function() {
+		var a = new Array();
+		var _g1 = 0, _g = arguments.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			a.push(arguments[i]);
+		}
+		return f(a);
+	};
+}
+Reflect.prototype.__class__ = Reflect;
 haxe.Log = function() { }
 haxe.Log.__name__ = ["haxe","Log"];
 haxe.Log.trace = function(v,infos) {
@@ -547,15 +862,65 @@ tests.VisualNovelTest.main = function() {
 		cb(count);
 	});
 	vn.SetupCommitting(function(data) {
-		haxe.Log.trace(data,{ fileName : "VisualNovelTest.hx", lineNumber : 72, className : "tests.VisualNovelTest", methodName : "main"});
+		haxe.Log.trace(data,{ fileName : "VisualNovelTest.hx", lineNumber : 73, className : "tests.VisualNovelTest", methodName : "main"});
 	});
 	var stockdata = [{ id : tools.Random.Get(156), picture : "madotsuki.png", picture_small : "madotsuki.png", metadata : "nothing here"}];
 	vn.SetupStockpile(stockdata);
 	vn.Load(sd0);
 	vn.SetupPermission({ user_id : 12, level : 3});
+	vn.SetupDeleting(function(ids) {
+		haxe.Log.trace(ids,{ fileName : "VisualNovelTest.hx", lineNumber : 87, className : "tests.VisualNovelTest", methodName : "main"});
+		haxe.Log.trace("the event machine is working",{ fileName : "VisualNovelTest.hx", lineNumber : 88, className : "tests.VisualNovelTest", methodName : "main"});
+	});
 	vn.Start();
+	var runner = new haxe.unit.TestRunner();
+	runner.add(new methodspec.EventMachineSpec());
+	runner.run();
 }
 tests.VisualNovelTest.prototype.__class__ = tests.VisualNovelTest;
+haxe.Public = function() { }
+haxe.Public.__name__ = ["haxe","Public"];
+haxe.Public.prototype.__class__ = haxe.Public;
+haxe.unit.TestCase = function(p) {
+}
+haxe.unit.TestCase.__name__ = ["haxe","unit","TestCase"];
+haxe.unit.TestCase.prototype.currentTest = null;
+haxe.unit.TestCase.prototype.setup = function() {
+}
+haxe.unit.TestCase.prototype.tearDown = function() {
+}
+haxe.unit.TestCase.prototype.print = function(v) {
+	haxe.unit.TestRunner.print(v);
+}
+haxe.unit.TestCase.prototype.assertTrue = function(b,c) {
+	this.currentTest.done = true;
+	if(b == false) {
+		this.currentTest.success = false;
+		this.currentTest.error = "expected true but was false";
+		this.currentTest.posInfos = c;
+		throw this.currentTest;
+	}
+}
+haxe.unit.TestCase.prototype.assertFalse = function(b,c) {
+	this.currentTest.done = true;
+	if(b == true) {
+		this.currentTest.success = false;
+		this.currentTest.error = "expected false but was true";
+		this.currentTest.posInfos = c;
+		throw this.currentTest;
+	}
+}
+haxe.unit.TestCase.prototype.assertEquals = function(expected,actual,c) {
+	this.currentTest.done = true;
+	if(actual != expected) {
+		this.currentTest.success = false;
+		this.currentTest.error = "expected '" + expected + "' but was '" + actual + "'";
+		this.currentTest.posInfos = c;
+		throw this.currentTest;
+	}
+}
+haxe.unit.TestCase.prototype.__class__ = haxe.unit.TestCase;
+haxe.unit.TestCase.__interfaces__ = [haxe.Public];
 if(typeof toolbar=='undefined') toolbar = {}
 toolbar.HorizontalBar = function(p) {
 	if( p === $_ ) return;
@@ -742,6 +1107,50 @@ controls.TextControl.prototype.Show = function(cb) {
 	this.backlight.Show();
 }
 controls.TextControl.prototype.__class__ = controls.TextControl;
+visualnovel.Fork = function(p) {
+}
+visualnovel.Fork.__name__ = ["visualnovel","Fork"];
+visualnovel.Fork.prototype.origin_scene_id = null;
+visualnovel.Fork.prototype.target_scene_id = null;
+visualnovel.Fork.prototype.text = null;
+visualnovel.Fork.prototype.choice_number = null;
+visualnovel.Fork.prototype.Text = function() {
+	return this.text;
+}
+visualnovel.Fork.prototype.Load = function(scenedata) {
+	this.text = scenedata.fork_text;
+	this.target_scene_id = scenedata.id;
+	this.origin_scene_id = scenedata.parent_id;
+	this.choice_number = scenedata.fork_number;
+}
+visualnovel.Fork.prototype.GetHash = function() {
+	return this.origin_scene_id + "-" + this.target_scene_id;
+}
+visualnovel.Fork.prototype.Choice = function() {
+	return this.choice_number;
+}
+visualnovel.Fork.prototype.__class__ = visualnovel.Fork;
+if(typeof events=='undefined') events = {}
+events.Event = function(name,origin) {
+	if( name === $_ ) return;
+	this.name = name;
+	this.origin = origin;
+}
+events.Event.__name__ = ["events","Event"];
+events.Event.prototype.name = null;
+events.Event.prototype.origin = null;
+events.Event.prototype.__class__ = events.Event;
+if(typeof visualnovelevents=='undefined') visualnovelevents = {}
+visualnovelevents.LayerDeleteEvent = function(id,origin) {
+	if( id === $_ ) return;
+	events.Event.call(this,visualnovelevents.LayerDeleteEvent.Name,origin);
+	this.id = id;
+}
+visualnovelevents.LayerDeleteEvent.__name__ = ["visualnovelevents","LayerDeleteEvent"];
+visualnovelevents.LayerDeleteEvent.__super__ = events.Event;
+for(var k in events.Event.prototype ) visualnovelevents.LayerDeleteEvent.prototype[k] = events.Event.prototype[k];
+visualnovelevents.LayerDeleteEvent.prototype.id = null;
+visualnovelevents.LayerDeleteEvent.prototype.__class__ = visualnovelevents.LayerDeleteEvent;
 haxe.Timer = function(time_ms) {
 	if( time_ms === $_ ) return;
 	var arr = haxe_timers;
@@ -796,29 +1205,36 @@ tools.Timer.Stop = function() {
 	return difference;
 }
 tools.Timer.prototype.__class__ = tools.Timer;
-visualnovel.Fork = function(p) {
+if(typeof methodspec=='undefined') methodspec = {}
+methodspec.EventMachineSpec = function(p) {
+	if( p === $_ ) return;
+	haxe.unit.TestCase.call(this);
 }
-visualnovel.Fork.__name__ = ["visualnovel","Fork"];
-visualnovel.Fork.prototype.origin_scene_id = null;
-visualnovel.Fork.prototype.target_scene_id = null;
-visualnovel.Fork.prototype.text = null;
-visualnovel.Fork.prototype.choice_number = null;
-visualnovel.Fork.prototype.Text = function() {
-	return this.text;
+methodspec.EventMachineSpec.__name__ = ["methodspec","EventMachineSpec"];
+methodspec.EventMachineSpec.__super__ = haxe.unit.TestCase;
+for(var k in haxe.unit.TestCase.prototype ) methodspec.EventMachineSpec.prototype[k] = haxe.unit.TestCase.prototype[k];
+methodspec.EventMachineSpec.prototype.faggot = null;
+methodspec.EventMachineSpec.prototype.setup = function() {
+	this.faggot = "no one";
 }
-visualnovel.Fork.prototype.Load = function(scenedata) {
-	this.text = scenedata.fork_text;
-	this.target_scene_id = scenedata.id;
-	this.origin_scene_id = scenedata.parent_id;
-	this.choice_number = scenedata.fork_number;
+methodspec.EventMachineSpec.prototype.testBasic = function() {
+	var me = this;
+	events.EventMachine.Listen("faggot",function(e) {
+		me.faggot = e.faggot;
+	});
+	events.EventMachine.Fire({ name : "faggot", origin : 12, faggot : "trevor"});
+	this.assertEquals("trevor",this.faggot,{ fileName : "EventMachineSpec.hx", lineNumber : 17, className : "methodspec.EventMachineSpec", methodName : "testBasic"});
 }
-visualnovel.Fork.prototype.GetHash = function() {
-	return this.origin_scene_id + "-" + this.target_scene_id;
+methodspec.EventMachineSpec.prototype.testFaggot = function() {
+	var me = this;
+	haxe.Log.trace("fj2048j204jg: " + this.faggot,{ fileName : "EventMachineSpec.hx", lineNumber : 23, className : "methodspec.EventMachineSpec", methodName : "testFaggot"});
+	events.EventMachine.Listen(visualnovelevents.LayerDeleteEvent.Name,function(e) {
+		if(e.id == 12) me.faggot = "henry";
+	});
+	events.EventMachine.Fire(new visualnovelevents.LayerDeleteEvent(12,15));
+	this.assertEquals("henry",this.faggot,{ fileName : "EventMachineSpec.hx", lineNumber : 29, className : "methodspec.EventMachineSpec", methodName : "testFaggot"});
 }
-visualnovel.Fork.prototype.Choice = function() {
-	return this.choice_number;
-}
-visualnovel.Fork.prototype.__class__ = visualnovel.Fork;
+methodspec.EventMachineSpec.prototype.__class__ = methodspec.EventMachineSpec;
 visualnovel.Scene = function(p) {
 	if( p === $_ ) return;
 	buildingblocks.Tile.call(this);
@@ -847,9 +1263,10 @@ visualnovel.Scene.prototype.AddLayer = function(data) {
 	lay.Show();
 }
 visualnovel.Scene.prototype.RemoveLayer = function(layer) {
+	events.EventMachine.Fire(new visualnovelevents.LayerDeleteEvent(layer.Id(),this.Id()));
 	if(this.layers.remove(layer.LayerId())) {
 		layer.Hide();
-		haxe.Log.trace("removed layer",{ fileName : "Scene.hx", lineNumber : 43, className : "visualnovel.Scene", methodName : "RemoveLayer"});
+		haxe.Log.trace("removed layer",{ fileName : "Scene.hx", lineNumber : 47, className : "visualnovel.Scene", methodName : "RemoveLayer"});
 	} else throw "Tile remove problem";
 }
 visualnovel.Scene.prototype.ShowText = function(flag) {
@@ -894,7 +1311,7 @@ visualnovel.Scene.prototype.Load = function(data) {
 		layer.Load(layerdata);
 		layer.Delete((function(l) {
 			return function() {
-				haxe.Log.trace("almost to deleting",{ fileName : "Scene.hx", lineNumber : 103, className : "visualnovel.Scene", methodName : "Load"});
+				haxe.Log.trace("almost to deleting",{ fileName : "Scene.hx", lineNumber : 107, className : "visualnovel.Scene", methodName : "Load"});
 				me.RemoveLayer(l);
 			};
 		})(layer));
@@ -991,6 +1408,8 @@ visualnovel.VisualNovel.prototype.tabs = null;
 visualnovel.VisualNovel.prototype.icon_stockpile = null;
 visualnovel.VisualNovel.prototype.fork_callto = null;
 visualnovel.VisualNovel.prototype.commit_callto = null;
+visualnovel.VisualNovel.prototype.delete_layer_callto = null;
+visualnovel.VisualNovel.prototype.delete_layer_queue = null;
 visualnovel.VisualNovel.prototype.Start = function() {
 	this.active_scene = this.scene_tree;
 	this.shown_scene = this.active_scene;
@@ -1046,6 +1465,15 @@ visualnovel.VisualNovel.prototype.Load = function(data) {
 		leafs = children;
 	}
 }
+visualnovel.VisualNovel.prototype.SetupDeleting = function(cb) {
+	var me = this;
+	this.delete_layer_callto = cb;
+	this.delete_layer_queue = [];
+	events.EventMachine.Listen(visualnovelevents.LayerDeleteEvent.Name,function(e) {
+		if(e.id != null) me.delete_layer_queue.push(e.id);
+		haxe.Log.trace(e.id,{ fileName : "VisualNovel.hx", lineNumber : 140, className : "visualnovel.VisualNovel", methodName : "SetupDeleting"});
+	});
+}
 visualnovel.VisualNovel.prototype.SetupPermission = function(data) {
 	this.permission = data.level;
 	this.user_id = data.user_id;
@@ -1065,7 +1493,7 @@ visualnovel.VisualNovel.prototype.SetupStockpile = function(stockdata) {
 		this.icon_stockpile.AddIcon(stock.picture,(function(s) {
 			return function() {
 				var size = tools.Measure.ImageSize(s.picture);
-				haxe.Log.trace(size,{ fileName : "VisualNovel.hx", lineNumber : 154, className : "visualnovel.VisualNovel", methodName : "SetupStockpile"});
+				haxe.Log.trace(size,{ fileName : "VisualNovel.hx", lineNumber : 169, className : "visualnovel.VisualNovel", methodName : "SetupStockpile"});
 				me.scenes.get(me.shown_scene.Data() + "").AddLayer({ id : null, image : s.picture, width : size.width, height : size.height, x : 50.0, y : 50.0, element_id : s.id});
 			};
 		})(stock));
@@ -1081,7 +1509,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 			var self_node = history.pop();
 			temp_history.push(self_node);
 			var scene_state = me.scenes.get(self_node.Data() + "").GetState();
-			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 225, className : "visualnovel.VisualNovel", methodName : "Commit"});
+			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 240, className : "visualnovel.VisualNovel", methodName : "Commit"});
 			var fork_node = me.forks.get(self_node.Parent() + "-" + self_node.Data());
 			var _g = 0, _g1 = self_node.Children();
 			while(_g < _g1.length) {
@@ -1101,6 +1529,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 	var fullstate = lambda_generatestate(this.past_history);
 	fullstate = fullstate.concat(lambda_generatestate(this.future_history));
 	this.commit_callto(fullstate);
+	this.delete_layer_callto(this.delete_layer_queue);
 }
 visualnovel.VisualNovel.prototype.Edit = function(flag) {
 	if(!this.p_checkpermission("edit")) return;
@@ -1568,6 +1997,82 @@ List.prototype.map = function(f) {
 	return b;
 }
 List.prototype.__class__ = List;
+haxe.unit.TestRunner = function(p) {
+	if( p === $_ ) return;
+	this.result = new haxe.unit.TestResult();
+	this.cases = new List();
+}
+haxe.unit.TestRunner.__name__ = ["haxe","unit","TestRunner"];
+haxe.unit.TestRunner.print = function(v) {
+	var msg = StringTools.htmlEscape(js.Boot.__string_rec(v,"")).split("\n").join("<br/>");
+	var d = document.getElementById("haxe:trace");
+	if(d == null) alert("haxe:trace element not found"); else d.innerHTML += msg;
+}
+haxe.unit.TestRunner.customTrace = function(v,p) {
+	haxe.unit.TestRunner.print(p.fileName + ":" + p.lineNumber + ": " + Std.string(v) + "\n");
+}
+haxe.unit.TestRunner.prototype.result = null;
+haxe.unit.TestRunner.prototype.cases = null;
+haxe.unit.TestRunner.prototype.add = function(c) {
+	this.cases.add(c);
+}
+haxe.unit.TestRunner.prototype.run = function() {
+	this.result = new haxe.unit.TestResult();
+	var $it0 = this.cases.iterator();
+	while( $it0.hasNext() ) {
+		var c = $it0.next();
+		this.runCase(c);
+	}
+	haxe.unit.TestRunner.print(this.result.toString());
+	return this.result.success;
+}
+haxe.unit.TestRunner.prototype.runCase = function(t) {
+	var old = haxe.Log.trace;
+	haxe.Log.trace = haxe.unit.TestRunner.customTrace;
+	var cl = Type.getClass(t);
+	var fields = Type.getInstanceFields(cl);
+	haxe.unit.TestRunner.print("Class: " + Type.getClassName(cl) + " ");
+	var _g = 0;
+	while(_g < fields.length) {
+		var f = fields[_g];
+		++_g;
+		var fname = f;
+		var field = Reflect.field(t,f);
+		if(StringTools.startsWith(fname,"test") && Reflect.isFunction(field)) {
+			t.currentTest = new haxe.unit.TestStatus();
+			t.currentTest.classname = Type.getClassName(cl);
+			t.currentTest.method = fname;
+			t.setup();
+			try {
+				field.apply(t,new Array());
+				if(t.currentTest.done) {
+					t.currentTest.success = true;
+					haxe.unit.TestRunner.print(".");
+				} else {
+					t.currentTest.success = false;
+					t.currentTest.error = "(warning) no assert";
+					haxe.unit.TestRunner.print("W");
+				}
+			} catch( $e0 ) {
+				if( js.Boot.__instanceof($e0,haxe.unit.TestStatus) ) {
+					var e = $e0;
+					haxe.unit.TestRunner.print("F");
+					t.currentTest.backtrace = haxe.Stack.toString(haxe.Stack.exceptionStack());
+				} else {
+				var e = $e0;
+				haxe.unit.TestRunner.print("E");
+				if(e.message != null) t.currentTest.error = "exception thrown : " + e + " [" + e.message + "]"; else t.currentTest.error = "exception thrown : " + e;
+				t.currentTest.backtrace = haxe.Stack.toString(haxe.Stack.exceptionStack());
+				}
+			}
+			this.result.add(t.currentTest);
+			t.tearDown();
+		}
+	}
+	haxe.unit.TestRunner.print("\n");
+	haxe.Log.trace = old;
+}
+haxe.unit.TestRunner.prototype.__class__ = haxe.unit.TestRunner;
 if(typeof js=='undefined') js = {}
 js.Lib = function() { }
 js.Lib.__name__ = ["js","Lib"];
@@ -1585,6 +2090,163 @@ js.Lib.setErrorHandler = function(f) {
 	js.Lib.onerror = f;
 }
 js.Lib.prototype.__class__ = js.Lib;
+ValueType = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] }
+ValueType.TNull = ["TNull",0];
+ValueType.TNull.toString = $estr;
+ValueType.TNull.__enum__ = ValueType;
+ValueType.TInt = ["TInt",1];
+ValueType.TInt.toString = $estr;
+ValueType.TInt.__enum__ = ValueType;
+ValueType.TFloat = ["TFloat",2];
+ValueType.TFloat.toString = $estr;
+ValueType.TFloat.__enum__ = ValueType;
+ValueType.TBool = ["TBool",3];
+ValueType.TBool.toString = $estr;
+ValueType.TBool.__enum__ = ValueType;
+ValueType.TObject = ["TObject",4];
+ValueType.TObject.toString = $estr;
+ValueType.TObject.__enum__ = ValueType;
+ValueType.TFunction = ["TFunction",5];
+ValueType.TFunction.toString = $estr;
+ValueType.TFunction.__enum__ = ValueType;
+ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; }
+ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; }
+ValueType.TUnknown = ["TUnknown",8];
+ValueType.TUnknown.toString = $estr;
+ValueType.TUnknown.__enum__ = ValueType;
+Type = function() { }
+Type.__name__ = ["Type"];
+Type.getClass = function(o) {
+	if(o == null) return null;
+	if(o.__enum__ != null) return null;
+	return o.__class__;
+}
+Type.getEnum = function(o) {
+	if(o == null) return null;
+	return o.__enum__;
+}
+Type.getSuperClass = function(c) {
+	return c.__super__;
+}
+Type.getClassName = function(c) {
+	var a = c.__name__;
+	return a.join(".");
+}
+Type.getEnumName = function(e) {
+	var a = e.__ename__;
+	return a.join(".");
+}
+Type.resolveClass = function(name) {
+	var cl;
+	try {
+		cl = eval(name);
+	} catch( e ) {
+		cl = null;
+	}
+	if(cl == null || cl.__name__ == null) return null;
+	return cl;
+}
+Type.resolveEnum = function(name) {
+	var e;
+	try {
+		e = eval(name);
+	} catch( err ) {
+		e = null;
+	}
+	if(e == null || e.__ename__ == null) return null;
+	return e;
+}
+Type.createInstance = function(cl,args) {
+	if(args.length <= 3) return new cl(args[0],args[1],args[2]);
+	if(args.length > 8) throw "Too many arguments";
+	return new cl(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
+}
+Type.createEmptyInstance = function(cl) {
+	return new cl($_);
+}
+Type.createEnum = function(e,constr,params) {
+	var f = Reflect.field(e,constr);
+	if(f == null) throw "No such constructor " + constr;
+	if(Reflect.isFunction(f)) {
+		if(params == null) throw "Constructor " + constr + " need parameters";
+		return f.apply(e,params);
+	}
+	if(params != null && params.length != 0) throw "Constructor " + constr + " does not need parameters";
+	return f;
+}
+Type.createEnumIndex = function(e,index,params) {
+	var c = e.__constructs__[index];
+	if(c == null) throw index + " is not a valid enum constructor index";
+	return Type.createEnum(e,c,params);
+}
+Type.getInstanceFields = function(c) {
+	var a = Reflect.fields(c.prototype);
+	a.remove("__class__");
+	return a;
+}
+Type.getClassFields = function(c) {
+	var a = Reflect.fields(c);
+	a.remove("__name__");
+	a.remove("__interfaces__");
+	a.remove("__super__");
+	a.remove("prototype");
+	return a;
+}
+Type.getEnumConstructs = function(e) {
+	var a = e.__constructs__;
+	return a.copy();
+}
+Type["typeof"] = function(v) {
+	switch(typeof(v)) {
+	case "boolean":
+		return ValueType.TBool;
+	case "string":
+		return ValueType.TClass(String);
+	case "number":
+		if(Math.ceil(v) == v % 2147483648.0) return ValueType.TInt;
+		return ValueType.TFloat;
+	case "object":
+		if(v == null) return ValueType.TNull;
+		var e = v.__enum__;
+		if(e != null) return ValueType.TEnum(e);
+		var c = v.__class__;
+		if(c != null) return ValueType.TClass(c);
+		return ValueType.TObject;
+	case "function":
+		if(v.__name__ != null) return ValueType.TObject;
+		return ValueType.TFunction;
+	case "undefined":
+		return ValueType.TNull;
+	default:
+		return ValueType.TUnknown;
+	}
+}
+Type.enumEq = function(a,b) {
+	if(a == b) return true;
+	try {
+		if(a[0] != b[0]) return false;
+		var _g1 = 2, _g = a.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			if(!Type.enumEq(a[i],b[i])) return false;
+		}
+		var e = a.__enum__;
+		if(e != b.__enum__ || e == null) return false;
+	} catch( e ) {
+		return false;
+	}
+	return true;
+}
+Type.enumConstructor = function(e) {
+	return e[0];
+}
+Type.enumParameters = function(e) {
+	return e.slice(2);
+}
+Type.enumIndex = function(e) {
+	return e[1];
+}
+Type.prototype.__class__ = Type;
 js.Boot = function() { }
 js.Boot.__name__ = ["js","Boot"];
 js.Boot.__unhtml = function(s) {
@@ -1952,36 +2614,6 @@ tools.Tooltip.Hide = function() {
 	tools.Tooltip.HaxeToolTip.Hide();
 }
 tools.Tooltip.prototype.__class__ = tools.Tooltip;
-animation.Spotlight = function(p) {
-	if( p === $_ ) return;
-	var me = this;
-	this.highlighter = new animation.BoxHighlighter();
-	this.mouse = { x : 0.0, y : 0.0};
-	new js.JQuery("body").mousemove(function(e) {
-		me.mouse.x = e.pageX + 0.0;
-		me.mouse.y = e.pageY + 0.0;
-	});
-}
-animation.Spotlight.__name__ = ["animation","Spotlight"];
-animation.Spotlight.Shine = function(size,pos) {
-	animation.Spotlight.Lights.Size(size);
-	animation.Spotlight.Lights.Position(pos);
-	animation.Spotlight.Lights.Show();
-}
-animation.Spotlight.Die = function() {
-	animation.Spotlight.Lights.Hide();
-}
-animation.Spotlight.prototype.highlighter = null;
-animation.Spotlight.prototype.mouse = null;
-animation.Spotlight.prototype.On = function(size,pos) {
-	this.highlighter.Size(size);
-	if(pos != null) this.highlighter.Position(pos); else this.highlighter.Position({ x : this.mouse.x - size.width / 2, y : this.mouse.y - size.height / 2});
-	this.highlighter.Show();
-}
-animation.Spotlight.prototype.Off = function() {
-	this.highlighter.Hide();
-}
-animation.Spotlight.prototype.__class__ = animation.Spotlight;
 Hash = function(p) {
 	if( p === $_ ) return;
 	this.h = {}
@@ -2040,6 +2672,68 @@ Hash.prototype.toString = function() {
 	return s.b.join("");
 }
 Hash.prototype.__class__ = Hash;
+events.EventMachine = function() { }
+events.EventMachine.__name__ = ["events","EventMachine"];
+events.EventMachine.Listen = function(name,cb) {
+	if(!events.EventMachine.event_storage.exists(name)) events.EventMachine.event_storage.set(name,[function(e) {
+		haxe.Log.trace(e,{ fileName : "EventMachine.hx", lineNumber : 11, className : "events.EventMachine", methodName : "Listen"});
+	}]);
+	events.EventMachine.event_storage.get(name).push(cb);
+}
+events.EventMachine.Fire = function(e) {
+	if(!events.EventMachine.event_storage.exists(e.name)) return;
+	var _g = 0, _g1 = events.EventMachine.event_storage.get(e.name);
+	while(_g < _g1.length) {
+		var handler = _g1[_g];
+		++_g;
+		handler(e);
+	}
+}
+events.EventMachine.prototype.__class__ = events.EventMachine;
+haxe.unit.TestStatus = function(p) {
+	if( p === $_ ) return;
+	this.done = false;
+	this.success = false;
+}
+haxe.unit.TestStatus.__name__ = ["haxe","unit","TestStatus"];
+haxe.unit.TestStatus.prototype.done = null;
+haxe.unit.TestStatus.prototype.success = null;
+haxe.unit.TestStatus.prototype.error = null;
+haxe.unit.TestStatus.prototype.method = null;
+haxe.unit.TestStatus.prototype.classname = null;
+haxe.unit.TestStatus.prototype.posInfos = null;
+haxe.unit.TestStatus.prototype.backtrace = null;
+haxe.unit.TestStatus.prototype.__class__ = haxe.unit.TestStatus;
+animation.Spotlight = function(p) {
+	if( p === $_ ) return;
+	var me = this;
+	this.highlighter = new animation.BoxHighlighter();
+	this.mouse = { x : 0.0, y : 0.0};
+	new js.JQuery("body").mousemove(function(e) {
+		me.mouse.x = e.pageX + 0.0;
+		me.mouse.y = e.pageY + 0.0;
+	});
+}
+animation.Spotlight.__name__ = ["animation","Spotlight"];
+animation.Spotlight.Shine = function(size,pos) {
+	animation.Spotlight.Lights.Size(size);
+	animation.Spotlight.Lights.Position(pos);
+	animation.Spotlight.Lights.Show();
+}
+animation.Spotlight.Die = function() {
+	animation.Spotlight.Lights.Hide();
+}
+animation.Spotlight.prototype.highlighter = null;
+animation.Spotlight.prototype.mouse = null;
+animation.Spotlight.prototype.On = function(size,pos) {
+	this.highlighter.Size(size);
+	if(pos != null) this.highlighter.Position(pos); else this.highlighter.Position({ x : this.mouse.x - size.width / 2, y : this.mouse.y - size.height / 2});
+	this.highlighter.Show();
+}
+animation.Spotlight.prototype.Off = function() {
+	this.highlighter.Hide();
+}
+animation.Spotlight.prototype.__class__ = animation.Spotlight;
 $_ = {}
 js.Boot.__res = {}
 js.Boot.__init();
@@ -2167,6 +2861,7 @@ tools.Measure.NAME = "FFOpenVN-MeasureTool-" + tools.Random.Get(999999);
 toolbar.HorizontalBar.NAME = "FFOpenVN-Horizontal-Bar-" + tools.Random.Get(10000);
 toolbar.HorizontalBar.ID = 0;
 controls.TextControl.ID = 0;
+visualnovelevents.LayerDeleteEvent.Name = "layer delete event";
 tools.Timer.TIME = haxe.Timer.stamp();
 js.Lib.onerror = null;
 toolbar.VerticalBar.NAME = "FFOpenVN-Vertical-Bar-" + tools.Random.Get(10000);
@@ -2176,5 +2871,6 @@ controls.IconsControl.IconsPerList = 5;
 controls.IconsControl.NAME = "FFOpenVN-IconsControl-" + tools.Random.Get(999999);
 tools.Tooltip.HaxeToolTip = new buildingblocks.Tile();
 tools.Tooltip.ID = 0;
+events.EventMachine.event_storage = new Hash();
 animation.Spotlight.Lights = new animation.BoxHighlighter();
 tests.VisualNovelTest.main()

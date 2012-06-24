@@ -9,6 +9,8 @@ import datastructures.Tree;
 import animation.Spotlight;
 import tools.Measure;
 import js.JQuery;
+import visualnovelevents.LayerDeleteEvent;
+import events.EventMachine;
 
 class VisualNovel extends Tile {
 	/****
@@ -46,7 +48,10 @@ class VisualNovel extends Tile {
 	// External callback interface
 	private var fork_callto : (Int -> Void) -> Void; // server-communication use 
 	private var commit_callto : Array<SceneData> -> Void ; // saves data to server 
+	private var delete_layer_callto : Array<Int> -> Void; // deletes layer based upon callto
 	
+	// Storage queues
+	private var delete_layer_queue : Array<Int>; // deletion queue
 	/****
 	* Public Setup (YOU MUST CALL ALL OF THEM!)
 	***/
@@ -125,6 +130,16 @@ class VisualNovel extends Tile {
 		} // while
 
 	} // Load
+	
+	public function SetupDeleting( cb ) { 
+		this.delete_layer_callto = cb;
+		this.delete_layer_queue = [];
+		EventMachine.Listen(LayerDeleteEvent.Name, function( e : LayerDeleteEvent ) { 
+			if ( e.id != null )
+				this.delete_layer_queue.push(e.id);
+			trace( e.id );
+		} ); // EventMachine.Listen
+	} // SetupDeleting
 	
 	// -1 = b& user
 	// 0 = anonymous user
@@ -247,6 +262,9 @@ class VisualNovel extends Tile {
 		
 		// Step 3: Callto the server
 		this.commit_callto(fullstate);
+		
+		// Step 4: Callto the server for deleted layers also
+		this.delete_layer_callto( this.delete_layer_queue );
 	} // Save
 	
 	// Toggles between regular mode and edit mode
