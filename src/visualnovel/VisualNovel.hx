@@ -192,6 +192,7 @@ class VisualNovel extends Tile {
 		this.loading = new Tile();
 		this.spotlight = new Spotlight();
 		this.selector = new VerticalBar();
+		this.selector.CSS("z-index", "521");
 		this.permission = 0;
 		this.edit_flag = false;
 		
@@ -499,6 +500,7 @@ class VisualNovel extends Tile {
 				this.spotlight.Off();
 			});
 			this.ui.set( k , btn );
+			btn.CSS("z-index", "9998");
 		} // for
 		
 		// Step 1: Next btn

@@ -293,7 +293,6 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 			altdownflag = !altdownflag;
 			if(altdownflag) tools.Tooltip.Show("Resize Mode (Press SPACE to toggle mode)"); else tools.Tooltip.Show("Position mode (Press SPACE to toggle mode)");
 		}
-		haxe.Log.trace(e.keyCode,{ fileName : "Tile.hx", lineNumber : 238, className : "buildingblocks.Tile", methodName : "p_EditMode"});
 		if(e.keyCode == 100) {
 			haxe.Log.trace(buildingblocks.Tile.SelectedTile.Id(),{ fileName : "Tile.hx", lineNumber : 240, className : "buildingblocks.Tile", methodName : "p_EditMode"});
 			if(buildingblocks.Tile.SelectedTile.Id() == me.Id()) {
@@ -301,6 +300,10 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 				tools.Tooltip.Hide();
 				me.Delete();
 			}
+		}
+		if(e.keyCode == 109) {
+			haxe.Log.trace(e.keyCode,{ fileName : "Tile.hx", lineNumber : 248, className : "buildingblocks.Tile", methodName : "p_EditMode"});
+			buildingblocks.Tile.SelectedTile.Size({ width : js.Lib.window.innerWidth + 0.0, height : js.Lib.window.innerHeight + 0.0});
 		}
 	});
 	this.domContainer.mousedown(function(e) {
@@ -348,6 +351,7 @@ buildingblocks.Tile.prototype.p_EditMode = function() {
 	this.edit_mode_initialized_flag = true;
 }
 buildingblocks.Tile.prototype.p_NormalMode = function() {
+	buildingblocks.Tile.SelectedTile = null;
 	animation.Spotlight.Die();
 	tools.Tooltip.Hide();
 }
@@ -847,12 +851,14 @@ visualnovel.Scene.prototype.Edit = function(flag) {
 		while( $it0.hasNext() ) {
 			var layer = $it0.next();
 			layer.Mode(1);
+			layer.CSS("z-index","9997");
 		}
 	} else {
 		var $it1 = this.layers.iterator();
 		while( $it1.hasNext() ) {
 			var layer = $it1.next();
 			layer.Mode(0);
+			layer.CSS("z-index","500");
 		}
 	}
 	this.text.Edit(this.edit_flag);
@@ -870,7 +876,7 @@ visualnovel.Scene.prototype.Load = function(data) {
 		layer.Load(layerdata);
 		layer.Delete((function(l) {
 			return function() {
-				haxe.Log.trace("almost to deleting",{ fileName : "Scene.hx", lineNumber : 107, className : "visualnovel.Scene", methodName : "Load"});
+				haxe.Log.trace("almost to deleting",{ fileName : "Scene.hx", lineNumber : 111, className : "visualnovel.Scene", methodName : "Load"});
 				me.RemoveLayer(l);
 			};
 		})(layer));
@@ -923,6 +929,7 @@ visualnovel.VisualNovel = function(p) {
 	this.loading = new buildingblocks.Tile();
 	this.spotlight = new animation.Spotlight();
 	this.selector = new toolbar.VerticalBar();
+	this.selector.CSS("z-index","521");
 	this.permission = 0;
 	this.edit_flag = false;
 	this.icon_stockpile = new controls.IconsControl();
@@ -1068,7 +1075,7 @@ visualnovel.VisualNovel.prototype.Commit = function() {
 			var self_node = history.pop();
 			temp_history.push(self_node);
 			var scene_state = me.scenes.get(self_node.Data() + "").GetState();
-			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 240, className : "visualnovel.VisualNovel", methodName : "Commit"});
+			haxe.Log.trace(me.forks,{ fileName : "VisualNovel.hx", lineNumber : 241, className : "visualnovel.VisualNovel", methodName : "Commit"});
 			var fork_node = me.forks.get(self_node.Parent() + "-" + self_node.Data());
 			var _g = 0, _g1 = self_node.Children();
 			while(_g < _g1.length) {
@@ -1240,6 +1247,7 @@ visualnovel.VisualNovel.prototype.p_setupui = function() {
 			};
 		})());
 		this.ui.set(k,btn[0]);
+		btn[0].CSS("z-index","9998");
 	}
 	this.ui.get("next").Click(function(e) {
 		me.Next();

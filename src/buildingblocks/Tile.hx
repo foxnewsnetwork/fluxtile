@@ -235,7 +235,7 @@ class Tile extends Element, implements Statistics {
 				else
 					Tooltip.Show("Position mode (Press SPACE to toggle mode)");
 			} // if
-			trace( e.keyCode );
+			
 			if ( e.keyCode == 100 ) { 
 				trace( Tile.SelectedTile.Id() );
 				if ( Tile.SelectedTile.Id() == this.Id() ) { 
@@ -244,6 +244,10 @@ class Tile extends Element, implements Statistics {
 					this.Delete();
 				} // if selected
 			} // if delete 
+			if ( e.keyCode == 109 ) {
+				trace( e.keyCode ); 
+				Tile.SelectedTile.Size( { width : js.Lib.window.innerWidth + 0.0, height : js.Lib.window.innerHeight + 0.0 } ) ;	
+			} // if m
 		}); // keypress
 		this.domContainer.mousedown(function(e:JqEvent){
 			if( this.mode != 1 )
@@ -310,6 +314,7 @@ class Tile extends Element, implements Statistics {
 	
 	// Enters normal mode
 	private function p_NormalMode() : Void { 
+		Tile.SelectedTile = null;
 		Spotlight.Die();
 		Tooltip.Hide();
 	} // p_NormalMode

@@ -82,12 +82,16 @@ class Scene extends Tile {
 		this.edit_flag = flag != null ? flag : !this.edit_flag;
 		
 		if( this.edit_flag ) { 
-			for( layer in this.layers )
-				layer.Mode(1); 
+			for( layer in this.layers ) {
+				layer.Mode(1);
+				layer.CSS("z-index", "9997");
+			} // for layer 
 		} // if edit mode
 		else { 
-			for( layer in this.layers )
+			for( layer in this.layers ) {
 				layer.Mode(0);
+				layer.CSS("z-index", "500");
+			} // for layer
 		} // else
 		this.text.Edit(this.edit_flag);
 	} // Edit
